@@ -1,0 +1,39 @@
+# 依赖文件
+node_modules/
+npm-debug.log
+yarn-error.log
+package-lock.json
+yarn.lock
+
+# 编译输出
+dist/
+build/
+*.min.js
+
+# 编辑器和IDE文件
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# 临时文件
+.tmp/
+.temp/
+*.log
+*.tmp
+
+# 本地配置
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# 测试覆盖率报告
+coverage/
+
+# 用户自定义文件
+*.bak
+*.backup 
