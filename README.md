@@ -17,7 +17,7 @@ LunaLens是一个专为小说阅读设计的油猴脚本，通过连接LunaTrans
    - [Edge版](https://microsoftedge.microsoft.com/addons/detail/tampermonkey/iikmkjmpaadaobahmlepeloendndfphd)
 
 2. 安装LunaLens脚本
-   - 方法1：[点击此处安装](https://raw.githubusercontent.com/raindrop213/LunaLens/main/luna-lens.js)
+   - 方法1：[点击此处安装](https://raw.githubusercontent.com/raindrop213/LunaLens/main/luna-lens.user.js)
    - 方法2：访问油猴插件管理面板->添加新脚本->粘贴本仓库中的代码
 
 3. 配置LunaTranslator
