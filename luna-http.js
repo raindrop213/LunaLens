@@ -264,7 +264,7 @@
                 userSettings = JSON.parse(JSON.stringify(LUNA_DEFAULT_SETTINGS));
                 
                 // 尝试读取存储的设置
-                const savedSettings = localStorage.getItem('lunaws-settings');
+                const savedSettings = localStorage.getItem('luna-settings');
                 if (savedSettings) {
                     try {
                         // 解析并验证设置
@@ -299,12 +299,12 @@
         // 控制面板内容设计
         function createControlPanel() {
             // 避免重复创建
-            if (document.getElementById('lunaws-panel')) return;
+            if (document.getElementById('luna-panel')) return;
 
             // 创建控制面板元素
             const panel = document.createElement('div');
-            panel.id = 'lunaws-panel';
-            panel.className = 'lunaws-control-panel collapsed';
+            panel.id = 'luna-panel';
+            panel.className = 'luna-control-panel collapsed';
             
             // 根据用户设置应用面板状态
             if (userSettings.panelPosition.panelCollapsed) {
@@ -319,7 +319,7 @@
             // 添加样式
             const style = document.createElement('style');
             style.textContent = `
-                .lunaws-control-panel {
+                .luna-control-panel {
                     position: fixed; z-index: 9999999; overflow: visible !important;
                     top: ${userSettings.panelPosition?.top || '20px'};
                     left: ${userSettings.panelPosition?.left || 'auto'};
@@ -328,66 +328,66 @@
                     width: 246px; font-size: 14px; max-height: 80vh; color: #333333;
                     overflow-y: auto; transition: all 0.3s ease; writing-mode: horizontal-tb;
                 }
-                .lunaws-control-panel.collapsed { width: 136px; }
-                .lunaws-control-panel.retracted { 
+                .luna-control-panel.collapsed { width: 136px; }
+                .luna-control-panel.retracted { 
                     transform: translateY(calc(-100% + 28px));
                     border-bottom-left-radius: 10px;
                     border-bottom-right-radius: 10px;
                     box-shadow: 0 3px 5px rgba(0,0,0,0.1);
                 }
-                .lunaws-control-panel.retracted:hover {
+                .luna-control-panel.retracted:hover {
                     transform: translateY(0);
                 }
-                .lunaws-header {
+                .luna-header {
                     padding: 8px 8px 6px 8px; font-size: 15px; border-bottom: 1px solid #eee;
                     display: flex; justify-content: space-between; align-items: center;
                     cursor: move; /* 添加移动光标样式 */
                 }
-                .lunaws-setup-panel { padding: 0 8px; }
-                .lunaws-title { font-weight: bold; margin-right: 5px; }
-                .lunaws-expand-button {
+                .luna-setup-panel { padding: 0 8px; }
+                .luna-title { font-weight: bold; margin-right: 5px; }
+                .luna-expand-button {
                     cursor: pointer; padding: 2px 6px; font-size: 10px; color: #777; white-space: nowrap;
                     border: 1px solid #ddd; border-radius: 3px; background-color: #f5f5f5; user-select: none;
                 }
-                .lunaws-expand-button:hover { background-color: #e0e0e0; }
-                .lunaws-button {
+                .luna-expand-button:hover { background-color: #e0e0e0; }
+                .luna-button {
                     padding: 3px 8px; margin: 0 5px 5px 0; border: none; border-radius: 3px;
                     background-color: #4CAF50; color: white; cursor: pointer;
                 }
-                .lunaws-button:hover { background-color: #45a049; }
-                .lunaws-button:disabled { background-color: #ccc; }
-                .lunaws-button.secondary { background-color: #607d8b; }
-                .lunaws-button.secondary:hover { background-color: #546e7a; }
-                .lunaws-settings-row { margin-bottom: 4px; }
-                .lunaws-settings-row label { display: block; font-size: 12px; color: #555; margin: 8px 0px 2px 0px;}
-                .lunaws-settings-row input[type="text"], .lunaws-settings-row textarea {
+                .luna-button:hover { background-color: #45a049; }
+                .luna-button:disabled { background-color: #ccc; }
+                .luna-button.secondary { background-color: #607d8b; }
+                .luna-button.secondary:hover { background-color: #546e7a; }
+                .luna-settings-row { margin-bottom: 4px; }
+                .luna-settings-row label { display: block; font-size: 12px; color: #555; margin: 8px 0px 2px 0px;}
+                .luna-settings-row input[type="text"], .luna-settings-row textarea {
                     width: 100%; padding: 4px; border: 1px solid #ddd; border-radius: 3px;
                     box-sizing: border-box; font-size: 12px; background-color: #ffffff; color: #333333;
                 }
-                .lunaws-settings-row input[type="text"]::placeholder {
+                .luna-settings-row input[type="text"]::placeholder {
                     color: #999999;
                 }
-                .lunaws-select {
+                .luna-select {
                     width: 100%; padding: 4px; border: 1px solid #ddd; border-radius: 3px; color: #333333;
                     box-sizing: border-box; font-size: 12px; background-color: white; cursor: pointer;
                 }
-                .lunaws-settings-row textarea { height: 40px; resize: vertical; }
-                .lunaws-toggle { display: flex; align-items: center; }
-                .lunaws-toggle input[type="checkbox"] { margin-right: 5px; }
-                .lunaws-tabs {
+                .luna-settings-row textarea { height: 40px; resize: vertical; }
+                .luna-toggle { display: flex; align-items: center; }
+                .luna-toggle input[type="checkbox"] { margin-right: 5px; }
+                .luna-tabs {
                     display: flex; border-bottom: 1px solid #ddd; margin-top: 10px;
                 }
-                .lunaws-tab {
+                .luna-tab {
                     padding: 4px 10px; cursor: pointer; border-radius: 3px 3px 0 0;
                     font-size: 12px; color: #333333;
                 }
-                .lunaws-tab.active {
+                .luna-tab.active {
                     border: 1px solid #ddd; border-bottom: 1px solid #fff;
                     margin-bottom: -1px; background-color: #f9f9f9;
                 }
-                .lunaws-tab-content { display: none; padding: 10px 0; }
-                .lunaws-tab-content.active { display: block; }
-                .lunaws-settings-saved {
+                .luna-tab-content { display: none; padding: 10px 0; }
+                .luna-tab-content.active { display: block; }
+                .luna-settings-saved {
                     position: fixed;
                     top: 50%;
                     left: 50%;
@@ -401,44 +401,11 @@
                     min-width: 300px;
                     writing-mode: horizontal-tb;
                 }
-                .lunaws-settings-saved .message { margin-bottom: 15px; color: #333; }
-                .lunaws-settings-saved .buttons { display: flex; justify-content: center; gap: 10px; }
-                .lunaws-settings-saved .lunaws-button { padding: 5px 15px; font-size: 13px; }
+                .luna-settings-saved .message { margin-bottom: 15px; color: #333; }
+                .luna-settings-saved .buttons { display: flex; justify-content: center; gap: 10px; }
+                .luna-settings-saved .luna-button { padding: 5px 15px; font-size: 13px; }
                 
-                /* 状态指示器样式 */
-                .lunaws-status { display: flex; gap: 3px; padding: 4px 8px;}
-                .lunaws-status-main { font-size: 11px; }
-                .lunaws-status-iframe { font-size: 11px; margin-left: auto; }
-                .lunaws-status-autoplay { 
-                    position: absolute;
-                    bottom: -20px;
-                    left: -7px;
-                    background: transparent;
-                    border: none;
-                    font-size: 25px;
-                    font-weight: bold;
-                    color: #27ae60;
-                    box-shadow: none;
-                    z-index: 9999;
-                    pointer-events: none; /* 使其不接收鼠标事件，点击可穿透 */
-                }
-                .lunaws-status-red { color: #c0392b; }
-                .lunaws-status-orange { color: #d35400; }
-                .lunaws-status-green { color: #27ae60; }
-                .lunaws-status-gray { color:rgb(122, 122, 122); }
-                .lunaws-status-main:hover::after {
-                    content: attr(data-status);
-                    position: absolute;
-                    left: 20px;
-                    top: 0;
-                    background-color: rgba(0, 0, 0, 0.7);
-                    color: white;
-                    padding: 3px 8px;
-                    border-radius: 3px;
-                    font-size: 12px;
-                    white-space: nowrap;
-                }
-                .lunaws-help { font-size: 12px; color: #666; }
+                .luna-help { font-size: 12px; color: #666; }
                 kbd { background-color: #f0f0f0; border-radius: 3px;
                     color: #333333; padding: 2px 4px; font-size: 12px; 
                 }
@@ -463,174 +430,169 @@
 
             console.log('[LunaHTTP] 创建控制面板，当前语言:', lang, 'userSettings:', userSettings);
             panel.innerHTML = `
-                <div class="lunaws-header">
-                    <div class="lunaws-title">LunaWS</div>
-                    <div class="lunaws-expand-button" id="lunaws-toggle-panel">${PANEL_TEXT[lang].settings}</div>
+                <div class="luna-header">
+                    <div class="luna-title">LunaWS</div>
+                    <div class="luna-expand-button" id="luna-toggle-panel">${PANEL_TEXT[lang].settings}</div>
                 </div>
 
-                <div class="lunaws-setup-panel" style="display:none;">
-                    <div class="lunaws-tabs">
-                        <div class="lunaws-tab active" data-tab="general">${PANEL_TEXT[lang].general}</div>
-                        <div class="lunaws-tab" data-tab="handle">${PANEL_TEXT[lang].handle}</div>
-                        <div class="lunaws-tab" data-tab="shortcuts">${PANEL_TEXT[lang].shortcuts}</div>
-                        <div class="lunaws-tab" data-tab="advanced">${PANEL_TEXT[lang].advanced}</div>
+                <div class="luna-setup-panel" style="display:none;">
+                    <div class="luna-tabs">
+                        <div class="luna-tab active" data-tab="general">${PANEL_TEXT[lang].general}</div>
+                        <div class="luna-tab" data-tab="handle">${PANEL_TEXT[lang].handle}</div>
+                        <div class="luna-tab" data-tab="shortcuts">${PANEL_TEXT[lang].shortcuts}</div>
+                        <div class="luna-tab" data-tab="advanced">${PANEL_TEXT[lang].advanced}</div>
                     </div>
                     
                     <!-- 基本设置 -->
-                    <div class="lunaws-tab-content active" data-tab="general">
-                        <div class="lunaws-settings-row">
+                    <div class="luna-tab-content active" data-tab="general">
+                        <div class="luna-settings-row">
                             <label>${PANEL_TEXT[lang].language}</label>
-                            <select id="lunaws-language" class="lunaws-select">
+                            <select id="luna-language" class="luna-select">
                                 <option value="en" ${lang === 'en' ? 'selected' : ''}>English</option>
                                 <option value="zh" ${lang === 'zh' ? 'selected' : ''}>中文</option>
                             </select>
                         </div>
-                        <div class="lunaws-settings-row">
+                        <div class="luna-settings-row">
                             <label>${PANEL_TEXT[lang].serverUrl}</label>
-                            <input type="text" id="lunaws-url" value="${userSettings.apiUrl || 'http://127.0.0.1:2333'}">
+                            <input type="text" id="luna-url" value="${userSettings.apiUrl || 'http://127.0.0.1:2333'}">
                         </div>
-                        <div class="lunaws-settings-row">
+                        <div class="luna-settings-row">
                             <label>${PANEL_TEXT[lang].WindowStyle}</label>
-                            <div class="lunaws-toggle">
-                                <input type="checkbox" id="lunaws-floating-translation" ${userSettings.floatingTranslation ? 'checked' : ''}>
-                                <label for="lunaws-floating-translation">${PANEL_TEXT[lang].useFloatingWindow}</label>
+                            <div class="luna-toggle">
+                                <input type="checkbox" id="luna-floating-translation" ${userSettings.floatingTranslation ? 'checked' : ''}>
+                                <label for="luna-floating-translation">${PANEL_TEXT[lang].useFloatingWindow}</label>
                             </div>
-                            <div class="lunaws-toggle">
-                                <input type="checkbox" id="lunaws-vertical-preference" ${userSettings.verticalPreference ? 'checked' : ''}>
-                                <label for="lunaws-vertical-preference">${PANEL_TEXT[lang].verticalPreference}</label>
+                            <div class="luna-toggle">
+                                <input type="checkbox" id="luna-vertical-preference" ${userSettings.verticalPreference ? 'checked' : ''}>
+                                <label for="luna-vertical-preference">${PANEL_TEXT[lang].verticalPreference}</label>
                             </div>
-                            <div class="lunaws-toggle">
-                                <input type="checkbox" id="lunaws-scroll-to-paragraph" ${userSettings.scrollToParagraph ? 'checked' : ''}>
-                                <label for="lunaws-scroll-to-paragraph">${PANEL_TEXT[lang].scrollToParagraph}</label>
+                            <div class="luna-toggle">
+                                <input type="checkbox" id="luna-scroll-to-paragraph" ${userSettings.scrollToParagraph ? 'checked' : ''}>
+                                <label for="luna-scroll-to-paragraph">${PANEL_TEXT[lang].scrollToParagraph}</label>
                             </div>
                         </div>
-                        <div class="lunaws-settings-row">
+                        <div class="luna-settings-row">
                             <label>${PANEL_TEXT[lang].autoReadSettings}</label>
-                            <div class="lunaws-toggle">
-                                <input type="checkbox" id="lunaws-auto-read-paragraph" ${userSettings.autoReadParagraph ? 'checked' : ''}>
-                                <label for="lunaws-auto-read-paragraph">${PANEL_TEXT[lang].autoReadParagraph}</label>
+                            <div class="luna-toggle">
+                                <input type="checkbox" id="luna-auto-read-paragraph" ${userSettings.autoReadParagraph ? 'checked' : ''}>
+                                <label for="luna-auto-read-paragraph">${PANEL_TEXT[lang].autoReadParagraph}</label>
                             </div>
-                            <div class="lunaws-toggle">
-                                <input type="checkbox" id="lunaws-auto-read-word" ${userSettings.autoReadWord ? 'checked' : ''}>
-                                <label for="lunaws-auto-read-word">${PANEL_TEXT[lang].autoReadWord}</label>
+                            <div class="luna-toggle">
+                                <input type="checkbox" id="luna-auto-read-word" ${userSettings.autoReadWord ? 'checked' : ''}>
+                                <label for="luna-auto-read-word">${PANEL_TEXT[lang].autoReadWord}</label>
                             </div>
                         </div>
-                        <div class="lunaws-settings-row">
+                        <div class="luna-settings-row">
                             <label>${PANEL_TEXT[lang].others}</label>
-                            <div class="lunaws-toggle">
-                                <input type="checkbox" id="lunaws-message-toggle" ${userSettings.MessageToggle ? 'checked' : ''}>
-                                <label for="lunaws-message-toggle">${PANEL_TEXT[lang].MessageToggle}</label>
+                            <div class="luna-toggle">
+                                <input type="checkbox" id="luna-message-toggle" ${userSettings.MessageToggle ? 'checked' : ''}>
+                                <label for="luna-message-toggle">${PANEL_TEXT[lang].MessageToggle}</label>
                             </div>
                         </div>
                     </div>
 
                     <!-- 处理设置 -->
-                    <div class="lunaws-tab-content" data-tab="handle">
-                        <div class="lunaws-settings-row">
+                    <div class="luna-tab-content" data-tab="handle">
+                        <div class="luna-settings-row">
                             <label>${PANEL_TEXT[lang].sentenceDelimiters}</label>
-                            <input type="text" id="lunaws-sentence-delimiters" value="${userSettings.sentenceDelimiters || '。．.!?！？…'}">
+                            <input type="text" id="luna-sentence-delimiters" value="${userSettings.sentenceDelimiters || '。．.!?！？…'}">
                         </div>
-                        <div class="lunaws-settings-row">
+                        <div class="luna-settings-row">
                             <label>${PANEL_TEXT[lang].sentenceThreshold}</label>
-                            <input type="text" id="lunaws-sentence-threshold" value="${userSettings.sentenceThreshold || 20}">
+                            <input type="text" id="luna-sentence-threshold" value="${userSettings.sentenceThreshold || 20}">
                         </div>
-                        <div class="lunaws-settings-row">
+                        <div class="luna-settings-row">
                             <label>${PANEL_TEXT[lang].minContentLength}</label>
-                            <input type="text" id="lunaws-min-content-length" value="${userSettings.minContentLength || 2}">
+                            <input type="text" id="luna-min-content-length" value="${userSettings.minContentLength || 2}">
                         </div>
-                        <div class="lunaws-settings-row">
+                        <div class="luna-settings-row">
                             <label>${PANEL_TEXT[lang].maxContentLength}</label>
-                            <input type="text" id="lunaws-max-content-length" value="${userSettings.maxContentLength || 1000}">
+                            <input type="text" id="luna-max-content-length" value="${userSettings.maxContentLength || 1000}">
                         </div>
-                        <div class="lunaws-settings-row">
-                            <div class="lunaws-toggle">
-                                <input type="checkbox" id="lunaws-remove-ruby" ${userSettings.removeRuby !== false ? 'checked' : ''}>
-                                <label for="lunaws-remove-ruby">${PANEL_TEXT[lang].removeRuby}</label>
+                        <div class="luna-settings-row">
+                            <div class="luna-toggle">
+                                <input type="checkbox" id="luna-remove-ruby" ${userSettings.removeRuby !== false ? 'checked' : ''}>
+                                <label for="luna-remove-ruby">${PANEL_TEXT[lang].removeRuby}</label>
                             </div>
                         </div>
                     </div>
                     
                     <!-- 快捷键设置 -->
-                    <div class="lunaws-tab-content" data-tab="shortcuts">
-                        <div class="lunaws-settings-row">
+                    <div class="luna-tab-content" data-tab="shortcuts">
+                        <div class="luna-settings-row">
                             <label>${PANEL_TEXT[lang].nextParagraph}</label>
-                            <input type="text" id="lunaws-next-para-key" value="${userSettings.keyBindings.nextParagraph || 'ArrowDown, 1'}">
+                            <input type="text" id="luna-next-para-key" value="${userSettings.keyBindings.nextParagraph || 'ArrowDown, 1'}">
                         </div>
-                        <div class="lunaws-settings-row">
+                        <div class="luna-settings-row">
                             <label>${PANEL_TEXT[lang].previousParagraph}</label>
-                            <input type="text" id="lunaws-prev-para-key" value="${userSettings.keyBindings.prevParagraph || 'ArrowUp, 2'}">
+                            <input type="text" id="luna-prev-para-key" value="${userSettings.keyBindings.prevParagraph || 'ArrowUp, 2'}">
                         </div>
-                        <div class="lunaws-settings-row">
+                        <div class="luna-settings-row">
                             <label>${PANEL_TEXT[lang].autoPlayMode}</label>
-                            <input type="text" id="lunaws-play-para-key" value="${userSettings.keyBindings.autoPlayMode || 'P, 0'}">
+                            <input type="text" id="luna-play-para-key" value="${userSettings.keyBindings.autoPlayMode || 'P, 0'}">
                         </div>
-                        <div class="lunaws-settings-row">
+                        <div class="luna-settings-row">
                             <label>${PANEL_TEXT[lang].closeActive}</label>
-                            <input type="text" id="lunaws-close-active-key" value="${userSettings.keyBindings.closeActive || 'Escape'}">
+                            <input type="text" id="luna-close-active-key" value="${userSettings.keyBindings.closeActive || 'Escape'}">
                         </div>
-                        <div class="lunaws-settings-row">
-                            <div class="lunaws-help">${PANEL_TEXT[lang].shortcutsHelp}</div>
+                        <div class="luna-settings-row">
+                            <div class="luna-help">${PANEL_TEXT[lang].shortcutsHelp}</div>
                         </div>
                     </div>
 
                     <!-- 高级设置 -->
-                    <div class="lunaws-tab-content" data-tab="advanced">
-                        <div class="lunaws-settings-row">
+                    <div class="luna-tab-content" data-tab="advanced">
+                        <div class="luna-settings-row">
                             <label>${PANEL_TEXT[lang].includeSelectors}</label>
-                            <textarea id="lunaws-include-selectors" placeholder="${PANEL_TEXT[lang].includeSelectorsHelp}">${userSettings.includeSelectors || 'p, h1, h2, h3, h4, h5, h6'}</textarea>
+                            <textarea id="luna-include-selectors" placeholder="${PANEL_TEXT[lang].includeSelectorsHelp}">${userSettings.includeSelectors || 'p, h1, h2, h3, h4, h5, h6'}</textarea>
                         </div>
-                        <div class="lunaws-settings-row">
+                        <div class="luna-settings-row">
                             <label>${PANEL_TEXT[lang].excludeSelectors}</label>
-                            <textarea id="lunaws-exclude-selectors" placeholder="${PANEL_TEXT[lang].excludeSelectorsHelp}">${userSettings.excludeSelectors || ''}</textarea>
+                            <textarea id="luna-exclude-selectors" placeholder="${PANEL_TEXT[lang].excludeSelectorsHelp}">${userSettings.excludeSelectors || ''}</textarea>
                         </div>
-                        <div class="lunaws-settings-row">
+                        <div class="luna-settings-row">
                             <label>${PANEL_TEXT[lang].includeClassIds}</label>
-                            <textarea id="lunaws-include-class-ids" placeholder="${PANEL_TEXT[lang].includeClassIdsHelp}">${userSettings.includeClassIds || ''}</textarea>
+                            <textarea id="luna-include-class-ids" placeholder="${PANEL_TEXT[lang].includeClassIdsHelp}">${userSettings.includeClassIds || ''}</textarea>
                         </div>
-                        <div class="lunaws-settings-row">
+                        <div class="luna-settings-row">
                             <label>${PANEL_TEXT[lang].excludeClassIds}</label>
-                            <textarea id="lunaws-exclude-class-ids" placeholder="${PANEL_TEXT[lang].excludeClassIdsHelp}">${userSettings.excludeClassIds || ''}</textarea>
+                            <textarea id="luna-exclude-class-ids" placeholder="${PANEL_TEXT[lang].excludeClassIdsHelp}">${userSettings.excludeClassIds || ''}</textarea>
                         </div>
-                        <div class="lunaws-settings-row">
+                        <div class="luna-settings-row">
                             <label>${PANEL_TEXT[lang].stopContainers}</label>
-                            <textarea id="lunaws-stop-containers" placeholder="${PANEL_TEXT[lang].stopContainersHelp}">${userSettings.stopContainers || 'article, main, section, div.content, div.main-content'}</textarea>
+                            <textarea id="luna-stop-containers" placeholder="${PANEL_TEXT[lang].stopContainersHelp}">${userSettings.stopContainers || 'article, main, section, div.content, div.main-content'}</textarea>
                         </div>
-                        <div class="lunaws-settings-row">
-                            <div class="lunaws-help">${PANEL_TEXT[lang].selectorHelp}</div>
+                        <div class="luna-settings-row">
+                            <div class="luna-help">${PANEL_TEXT[lang].selectorHelp}</div>
                         </div>
                     </div>
                     
-                    <div class="lunaws-settings-row">
-                        <button id="lunaws-save-settings" class="lunaws-button">${PANEL_TEXT[lang].saveSettings}</button>
-                        <button id="lunaws-reset-settings" class="lunaws-button secondary">${PANEL_TEXT[lang].resetSettings}</button>
+                    <div class="luna-settings-row">
+                        <button id="luna-save-settings" class="luna-button">${PANEL_TEXT[lang].saveSettings}</button>
+                        <button id="luna-reset-settings" class="luna-button secondary">${PANEL_TEXT[lang].resetSettings}</button>
                     </div>
                 </div>
 
                 <!-- 保存成功提示 -->
-                <div id="lunaws-settings-saved-template" style="display:none;">
-                    <div class="lunaws-settings-saved">
+                <div id="luna-settings-saved-template" style="display:none;">
+                    <div class="luna-settings-saved">
                         <div class="message">${PANEL_TEXT[lang].settingsSaved}</div>
                         <div class="buttons">
-                            <button class="lunaws-button">${PANEL_TEXT[lang].refreshNow}</button>
-                            <button class="lunaws-button secondary">${PANEL_TEXT[lang].refreshLater}</button>
+                            <button class="luna-button">${PANEL_TEXT[lang].refreshNow}</button>
+                            <button class="luna-button secondary">${PANEL_TEXT[lang].refreshLater}</button>
                         </div>
                     </div>
                 </div>
 
                 <!-- 重置确认提示 -->
-                <div id="lunaws-reset-confirm-template" style="display:none;">
-                    <div class="lunaws-settings-saved">
+                <div id="luna-reset-confirm-template" style="display:none;">
+                    <div class="luna-settings-saved">
                         <div class="message">${PANEL_TEXT[lang].confirmReset}</div>
                         <div class="buttons">
-                            <button class="lunaws-button" id="lunaws-confirm-reset">${PANEL_TEXT[lang].confirmYes}</button>
-                            <button class="lunaws-button secondary">${PANEL_TEXT[lang].confirmNo}</button>
+                            <button class="luna-button" id="luna-confirm-reset">${PANEL_TEXT[lang].confirmYes}</button>
+                            <button class="luna-button secondary">${PANEL_TEXT[lang].confirmNo}</button>
                         </div>
                     </div>
-                </div>
-
-                <div class="lunaws-status" id="lunaws-status" onclick="updateConnectionStatusDisplay()">
-                    <span class="lunaws-status-main lunaws-status-red">main 0/1</span>
-                    <span class="lunaws-status-iframe lunaws-status-gray">iframe 0/0</span>
                 </div>
             `;
             
@@ -644,40 +606,40 @@
         function setupControlPanelEvents() {
             try {
                 // 验证控件是否已创建
-                if (!document.getElementById('lunaws-include-selectors')) {
+                if (!document.getElementById('luna-include-selectors')) {
                     console.log('[LunaHTTP] 控件尚未创建，无法设置事件');
                     return;
                 }
                 
                 // 添加事件监听器
-                document.getElementById('lunaws-toggle-panel').addEventListener('click', toggleControlPanel);
-                document.getElementById('lunaws-save-settings').addEventListener('click', saveUserSettings);
-                document.getElementById('lunaws-reset-settings').addEventListener('click', resetUserSettings);
+                document.getElementById('luna-toggle-panel').addEventListener('click', toggleControlPanel);
+                document.getElementById('luna-save-settings').addEventListener('click', saveUserSettings);
+                document.getElementById('luna-reset-settings').addEventListener('click', resetUserSettings);
                 
                 // 标签页切换
-                document.querySelectorAll('.lunaws-tab').forEach(tab => {
+                document.querySelectorAll('.luna-tab').forEach(tab => {
                     tab.addEventListener('click', function() {
                         const tabName = this.getAttribute('data-tab');
-                        document.querySelectorAll('.lunaws-tab').forEach(t => t.classList.remove('active'));
+                        document.querySelectorAll('.luna-tab').forEach(t => t.classList.remove('active'));
                         this.classList.add('active');
                         
-                        document.querySelectorAll('.lunaws-tab-content').forEach(content => {
+                        document.querySelectorAll('.luna-tab-content').forEach(content => {
                             content.classList.remove('active');
                         });
-                        document.querySelector(`.lunaws-tab-content[data-tab="${tabName}"]`).classList.add('active');
+                        document.querySelector(`.luna-tab-content[data-tab="${tabName}"]`).classList.add('active');
                     });
                 });
 
                 // 实现面板拖动功能
-                const panel = document.getElementById('lunaws-panel');
-                const header = panel.querySelector('.lunaws-header');
+                const panel = document.getElementById('luna-panel');
+                const header = panel.querySelector('.luna-header');
                 let isDragging = false;
                 let dragOffsetX, dragOffsetY;
                 
                 // 鼠标按下开始拖动
                 header.addEventListener('mousedown', function(e) {
                     // 如果点击的是展开/折叠按钮，则不触发拖动
-                    if (e.target === document.getElementById('lunaws-toggle-panel')) {
+                    if (e.target === document.getElementById('luna-toggle-panel')) {
                         return;
                     }
                     
@@ -747,35 +709,35 @@
         // 保存用户设置
         function saveUserSettings() {
             // 获取所有设置值
-            if (document.getElementById('lunaws-include-selectors')) {
+            if (document.getElementById('luna-include-selectors')) {
                 const newSettings = {
-                    language: document.getElementById('lunaws-language').value,
-                    apiUrl: document.getElementById('lunaws-url').value,
-                    floatingTranslation: document.getElementById('lunaws-floating-translation').checked,
-                    verticalPreference: document.getElementById('lunaws-vertical-preference').checked,
-                    scrollToParagraph: document.getElementById('lunaws-scroll-to-paragraph').checked,
-                    autoReadParagraph: document.getElementById('lunaws-auto-read-paragraph').checked,
-                    autoReadWord: document.getElementById('lunaws-auto-read-word').checked,
-                    MessageToggle: document.getElementById('lunaws-message-toggle').checked,
+                    language: document.getElementById('luna-language').value,
+                    apiUrl: document.getElementById('luna-url').value,
+                    floatingTranslation: document.getElementById('luna-floating-translation').checked,
+                    verticalPreference: document.getElementById('luna-vertical-preference').checked,
+                    scrollToParagraph: document.getElementById('luna-scroll-to-paragraph').checked,
+                    autoReadParagraph: document.getElementById('luna-auto-read-paragraph').checked,
+                    autoReadWord: document.getElementById('luna-auto-read-word').checked,
+                    MessageToggle: document.getElementById('luna-message-toggle').checked,
 
-                    sentenceDelimiters: document.getElementById('lunaws-sentence-delimiters').value,
-                    sentenceThreshold: parseInt(document.getElementById('lunaws-sentence-threshold').value) || 20,
-                    minContentLength: parseInt(document.getElementById('lunaws-min-content-length').value) || 2,
-                    maxContentLength: parseInt(document.getElementById('lunaws-max-content-length').value) || 1000,
-                    removeRuby: document.getElementById('lunaws-remove-ruby').checked,
+                    sentenceDelimiters: document.getElementById('luna-sentence-delimiters').value,
+                    sentenceThreshold: parseInt(document.getElementById('luna-sentence-threshold').value) || 20,
+                    minContentLength: parseInt(document.getElementById('luna-min-content-length').value) || 2,
+                    maxContentLength: parseInt(document.getElementById('luna-max-content-length').value) || 1000,
+                    removeRuby: document.getElementById('luna-remove-ruby').checked,
 
                     keyBindings: {
-                        nextParagraph: document.getElementById('lunaws-next-para-key').value,
-                        prevParagraph: document.getElementById('lunaws-prev-para-key').value,
-                        autoPlayMode: document.getElementById('lunaws-play-para-key').value,
-                        closeActive: document.getElementById('lunaws-close-active-key').value
+                        nextParagraph: document.getElementById('luna-next-para-key').value,
+                        prevParagraph: document.getElementById('luna-prev-para-key').value,
+                        autoPlayMode: document.getElementById('luna-play-para-key').value,
+                        closeActive: document.getElementById('luna-close-active-key').value
                     },
 
-                    includeSelectors: document.getElementById('lunaws-include-selectors').value,
-                    excludeSelectors: document.getElementById('lunaws-exclude-selectors').value,
-                    includeClassIds: document.getElementById('lunaws-include-class-ids').value,
-                    excludeClassIds: document.getElementById('lunaws-exclude-class-ids').value,
-                    stopContainers: document.getElementById('lunaws-stop-containers').value,
+                    includeSelectors: document.getElementById('luna-include-selectors').value,
+                    excludeSelectors: document.getElementById('luna-exclude-selectors').value,
+                    includeClassIds: document.getElementById('luna-include-class-ids').value,
+                    excludeClassIds: document.getElementById('luna-exclude-class-ids').value,
+                    stopContainers: document.getElementById('luna-stop-containers').value,
                     
                     // 使用默认面板位置
                     panelPosition: JSON.parse(JSON.stringify(LUNA_DEFAULT_SETTINGS.panelPosition))
@@ -786,15 +748,15 @@
             }
             
             // 保存到localStorage
-            localStorage.setItem('lunaws-settings', JSON.stringify(userSettings));
+            localStorage.setItem('luna-settings', JSON.stringify(userSettings));
             
             // 显示保存成功提示
-            const template = document.getElementById('lunaws-settings-saved-template');
-            const notification = template.querySelector('.lunaws-settings-saved').cloneNode(true);
+            const template = document.getElementById('luna-settings-saved-template');
+            const notification = template.querySelector('.luna-settings-saved').cloneNode(true);
             
             // 添加刷新按钮的事件监听器
-            const refreshNowButton = notification.querySelector('.lunaws-button');
-            const refreshLaterButton = notification.querySelector('.lunaws-button.secondary');
+            const refreshNowButton = notification.querySelector('.luna-button');
+            const refreshLaterButton = notification.querySelector('.luna-button.secondary');
             
             // 立即刷新按钮
             if (refreshNowButton) {
@@ -806,7 +768,7 @@
             // 稍后刷新按钮
             if (refreshLaterButton) {
                 refreshLaterButton.addEventListener('click', function() {
-                    this.closest('.lunaws-settings-saved').remove();
+                    this.closest('.luna-settings-saved').remove();
                 });
             }
             
@@ -816,12 +778,12 @@
         // 重置用户设置
         function resetUserSettings() {
             // 显示重置确认提示
-            const template = document.getElementById('lunaws-reset-confirm-template');
-            const confirmDialog = template.querySelector('.lunaws-settings-saved').cloneNode(true);
+            const template = document.getElementById('luna-reset-confirm-template');
+            const confirmDialog = template.querySelector('.luna-settings-saved').cloneNode(true);
             
             // 添加按钮的事件监听器
             // 确认按钮
-            confirmDialog.querySelector('#lunaws-confirm-reset').addEventListener('click', function() {
+            confirmDialog.querySelector('#luna-confirm-reset').addEventListener('click', function() {
                 // 关闭确认对话框
                 confirmDialog.remove();
                 
@@ -836,14 +798,14 @@
                 userSettings = validateUserSettings(resetSettings);
                 
                 // 保存新设置到localStorage
-                localStorage.setItem('lunaws-settings', JSON.stringify(userSettings));
+                localStorage.setItem('luna-settings', JSON.stringify(userSettings));
                 
                 // 直接刷新页面，而不是显示通知
                 window.location.reload();
             });
             
             // 取消按钮
-            confirmDialog.querySelector('.lunaws-button.secondary').addEventListener('click', function() {
+            confirmDialog.querySelector('.luna-button.secondary').addEventListener('click', function() {
                 confirmDialog.remove();
             });
             
@@ -853,9 +815,9 @@
         // 折叠/展开控制面板
         function toggleControlPanel() {
             try {
-                const panel = document.querySelector('.lunaws-control-panel');
-                const advancedSettings = document.querySelector('.lunaws-setup-panel');
-                const toggleButton = document.getElementById('lunaws-toggle-panel');
+                const panel = document.querySelector('.luna-control-panel');
+                const advancedSettings = document.querySelector('.luna-setup-panel');
+                const toggleButton = document.getElementById('luna-toggle-panel');
                 
                 // 确保用户设置已初始化且语言设置有效
                 if (!userSettings || !userSettings.language || (userSettings.language !== 'zh' && userSettings.language !== 'en')) {
@@ -877,20 +839,20 @@
                     panel.classList.remove('collapsed');
                     // 更新collapsed状态 - 但不保存位置信息
                     userSettings.panelPosition.panelCollapsed = false;
-                    const settings = JSON.parse(localStorage.getItem('lunaws-settings') || '{}');
+                    const settings = JSON.parse(localStorage.getItem('luna-settings') || '{}');
                     settings.panelPosition = settings.panelPosition || {};
                     settings.panelPosition.panelCollapsed = false;
-                    localStorage.setItem('lunaws-settings', JSON.stringify(settings));
+                    localStorage.setItem('luna-settings', JSON.stringify(settings));
                 } else {
                     advancedSettings.style.display = 'none';
                     toggleButton.textContent = PANEL_TEXT[lang].settings;
                     panel.classList.add('collapsed');
                     // 更新collapsed状态 - 但不保存位置信息
                     userSettings.panelPosition.panelCollapsed = true;
-                    const settings = JSON.parse(localStorage.getItem('lunaws-settings') || '{}');
+                    const settings = JSON.parse(localStorage.getItem('luna-settings') || '{}');
                     settings.panelPosition = settings.panelPosition || {};
                     settings.panelPosition.panelCollapsed = true;
-                    localStorage.setItem('lunaws-settings', JSON.stringify(settings));
+                    localStorage.setItem('luna-settings', JSON.stringify(settings));
                 }
                 
                 console.log('[LunaHTTP] 面板状态已切换');
@@ -911,7 +873,7 @@
                 console.warn('[LunaHTTP] 创建控制面板前用户设置未正确初始化，重新初始化');
                 // 尝试从localStorage加载
                 try {
-                    const savedSettings = localStorage.getItem('lunaws-settings');
+                    const savedSettings = localStorage.getItem('luna-settings');
                     if (savedSettings) {
                         try {
                             const parsedSettings = JSON.parse(savedSettings);
@@ -936,7 +898,7 @@
             
             // 检查面板是否存在且可见
             setTimeout(() => {
-                const panel = document.getElementById('lunaws-panel');
+                const panel = document.getElementById('luna-panel');
                 if (!panel) {
                     console.error('[LunaHTTP] 控制面板创建失败，未找到面板元素');
                 } else {
@@ -949,56 +911,56 @@
         /* ========== 基本功能变量 ========== */
         const STYLES = `
             /* 段落和单词样式 */
-            .lunaws-active-paragraph {
+            .luna-active-paragraph {
                 padding: 8px; border-radius: 4px;
                 transition: all 0.2s ease-in-out;
                 position: relative; z-index: 5; background-color: white;
                 box-shadow: 1px 2px 4px 0px rgba(122, 122, 122, 0.2);
             }
-            .lunaws-highlighted {
+            .luna-highlighted {
                 border-radius: 4px;
                 background-color: rgba(173, 216, 230, 0.3);
                 outline: 2px dashed rgba(173, 216, 230, 0.7);
                 transition: background-color 0.2s ease;
             }
-            .lunaws-word {
+            .luna-word {
                 display: inline-block; position: relative;
                 cursor: pointer; margin: 0 1px;
             }
-            .lunaws-word:hover { 
+            .luna-word:hover { 
                 background-color: rgba(238, 206, 165, 0.7) !important;
                 border-radius: 2px;
             }
-            .lunaws-word.selected { 
+            .luna-word.selected { 
                 background-color: #ffeb3b !important;
                 border-radius: 2px;
             }
 
             /* 句子样式 */
-            .lunaws-sentence {
+            .luna-sentence {
                 display: inline; position: relative;
                 transition: background-color 0.2s ease;
             }
-            .lunaws-sentence:hover {
+            .luna-sentence:hover {
                 background-color: rgba(255, 221, 153, 0.5);
                 cursor: pointer; border-radius: 3px; box-shadow: 0 0 2px rgba(0,0,0,0.1);
             }
 
             /* 复制样式 */
-            .lunaws-copy {
+            .luna-copy {
                 outline: 2px solid rgba(76, 175, 80, 0.4);
                 transition: outline 0.2s ease-in-out; border-radius: 3px;
             }
             
             /* 朗读样式 */
-            .lunaws-reaction {
+            .luna-reaction {
                 background-color: rgba(0, 180, 0, 0.3) !important;
                 transition: background-color 0.2s ease; border-radius: 3px;
             }
 
 
             /* 弹窗与翻译区域 */
-            .lunaws-dictionary-popup {
+            .luna-dictionary-popup {
                 position: absolute !important;
                 background-color: white !important;
                 border-radius: 4px !important;
@@ -1018,53 +980,53 @@
                 text-align: left !important;
                 box-sizing: border-box !important;
             }
-            .lunaws-search-box {
+            .luna-search-box {
                 display: flex; flex-direction: row; align-items: center;
                 margin-bottom: 5px; width: 100%;
             }
-            .lunaws-search-input {
+            .luna-search-input {
                 flex: 1; padding: 5px 8px; height: 30px;
                 box-sizing: border-box; border: 1px solid #ddd;
                 border-radius: 3px; font-size: 14px;
             }
-            .lunaws-search-input:focus {
+            .luna-search-input:focus {
                 border-color:rgba(66, 153, 225, 0.46); outline: none;
                 box-shadow: 0 0 0 2px rgba(66, 153, 225, 0.2);
             }
-            .lunaws-close-button {
+            .luna-close-button {
                 margin-left: 5px; width: 30px; height: 30px; color: #575757;
                 border: 1px solid #ddd; border-radius: 4px; padding: 0;
                 cursor: pointer; display: flex; align-items: center;
                 justify-content: center; transition: background-color 0.2s;
                 font-size: 18px; background-color: white;
             }
-            .lunaws-close-button:hover { background-color: #e74c3c; color: white; }
-            .lunaws-dict-iframe {
+            .luna-close-button:hover { background-color: #e74c3c; color: white; }
+            .luna-dict-iframe {
                 margin-top: 5px; width: 100%; height: 280px;
                 border: none; overflow: auto; display: block;
                 background-color: white; border-radius: 3px;
             }
 
-            .lunaws-translation-area {
+            .luna-translation-area {
                 margin-top: 0; padding: 10px; background-color: white;
                 border-radius: 4px; position: absolute; max-width: 100%;
                 transition: all 0.3s ease; animation: fadeIn 0.3s ease-in-out;
                 box-sizing: border-box; box-shadow: 1px 2px 4px 0px rgba(122, 122, 122, 0.2);
             }
-            .lunaws-vertical-translation-area { border-top: 2px solid #9c27b0; }
-            .lunaws-vertical-active-paragraph { border-top: 2px solid #3498db; }
-            .lunaws-horizontal-translation-area { border-left: 2px solid #9c27b0; }
-            .lunaws-horizontal-active-paragraph { border-left: 2px solid #3498db; }
+            .luna-vertical-translation-area { border-top: 2px solid #9c27b0; }
+            .luna-vertical-active-paragraph { border-top: 2px solid #3498db; }
+            .luna-horizontal-translation-area { border-left: 2px solid #9c27b0; }
+            .luna-horizontal-active-paragraph { border-left: 2px solid #3498db; }
             @keyframes fadeIn {
                 from { opacity: 0; transform: translateY(-10px); }
                 to { opacity: 1; transform: translateY(0); }
             }
-            .lunaws-translation-area hr { border: 1px solid rgba(157, 157, 157, 0.1); width: 100%; height: 100%; }
-            .lunaws-translator-header { color:rgba(126, 87, 194, 0.6); font-size: 10px; }
-            .lunaws-translation-content { font-size: 0.9em; }
+            .luna-translation-area hr { border: 1px solid rgba(157, 157, 157, 0.1); width: 100%; height: 100%; }
+            .luna-translator-header { color:rgba(126, 87, 194, 0.6); font-size: 10px; }
+            .luna-translation-content { font-size: 0.9em; }
 
             /* Ruby标签样式 */
-            .lunaws-word rt { text-align: center; font-size: 10px; color: #c33c32; }
+            .luna-word rt { text-align: center; font-size: 10px; color: #c33c32; }
         `;
 
         let socket = null;
@@ -1162,7 +1124,7 @@
                 // 添加iframe状态消息监听
                 window.addEventListener('message', function(event) {
                     // 验证消息来源
-                    if (event.data && event.data.type === 'lunaws-iframe-status') {
+                    if (event.data && event.data.type === 'luna-iframe-status') {
                         // 更新iframe状态追踪
                         const { iframeId, isConnected } = event.data;
                         if (iframeId && window.top === window) { // 只在主页面处理
@@ -1170,25 +1132,10 @@
                                 isConnected: isConnected,
                                 lastUpdate: Date.now()
                             };
-                            
-                            // 更新状态显示
-                            updateConnectionStatusDisplay();
                         }
                     }
                 });
-                
-                // 清理失效的iframe连接记录(每30秒执行一次)
-                if (window.top === window) { // 只在主页面执行
-                    setInterval(() => {
-                        let hasChanges = false;
-                        if (hasChanges) {
-                            updateConnectionStatusDisplay();
-                        }
-                    }, 30000);
-                }
 
-                // 初始化时先执行一次，连接状态显示
-                setTimeout(updateConnectionStatusDisplay, 1000);
                 
                 console.log('[LunaHTTP] 初始化完成');
             } catch (err) {
@@ -1203,7 +1150,7 @@
                 userSettings = JSON.parse(JSON.stringify(defaultUserSettings));
                 
                 // 尝试读取存储的设置
-                const savedSettings = localStorage.getItem('lunaws-settings');
+                const savedSettings = localStorage.getItem('luna-settings');
                 if (savedSettings) {
                     try {
                         // 解析并验证设置
@@ -1495,9 +1442,9 @@
             
             // 根据方向添加相应的类
             if (userSettings.verticalPreference) {
-                translationArea.classList.add('lunaws-vertical-translation-area');
+                translationArea.classList.add('luna-vertical-translation-area');
             } else {
-                translationArea.classList.add('lunaws-horizontal-translation-area');
+                translationArea.classList.add('luna-horizontal-translation-area');
             }
             
             // 添加到DOM（先添加再定位，确保尺寸已计算）
@@ -1521,9 +1468,9 @@
             if (currentParagraph && originalContent) {
                 
                 currentParagraph.innerHTML = originalContent;
-                currentParagraph.classList.remove('lunaws-active-paragraph');
-                currentParagraph.classList.remove('lunaws-vertical-active-paragraph');
-                currentParagraph.classList.remove('lunaws-horizontal-active-paragraph');
+                currentParagraph.classList.remove('luna-active-paragraph');
+                currentParagraph.classList.remove('luna-vertical-active-paragraph');
+                currentParagraph.classList.remove('luna-horizontal-active-paragraph');
                 
                 // 移除翻译区域
                 removeTranslationArea();
@@ -1556,7 +1503,7 @@
                 
                 if (matchingParagraph && matchingParagraph !== currentParagraph) {
                     // 添加高亮样式
-                    matchingParagraph.classList.add('lunaws-highlighted');
+                    matchingParagraph.classList.add('luna-highlighted');
                 }
             });
             
@@ -1567,7 +1514,7 @@
                 
                 if (matchingParagraph && matchingParagraph !== currentParagraph) {
                     // 移除高亮样式
-                    matchingParagraph.classList.remove('lunaws-highlighted');
+                    matchingParagraph.classList.remove('luna-highlighted');
                 }
             });
         }
@@ -1578,17 +1525,16 @@
             if (!element || element.nodeType === 9) return null;
 
             // 如果当前元素已经是活动段落，返回null
-            if (element.classList && element.classList.contains('lunaws-active-paragraph')) return null;
+            if (element.classList && element.classList.contains('luna-active-paragraph')) return null;
 
             // 排除控制面板和其内部的所有元素
-            if (element.closest && element.closest('.lunaws-control-panel')) return null;
+            if (element.closest && element.closest('.luna-control-panel')) return null;
             
             // 排除设置保存成功提示框
-            if (element.closest && element.closest('.lunaws-settings-saved')) return null;
+            if (element.closest && element.closest('.luna-settings-saved')) return null;
 
             // 确保选择器不为空
             if (!userSettings.includeSelectors && !userSettings.includeClassIds) return null;
-
             // 获取包含和排除选择器
             const includeSelectors = (userSettings.includeSelectors || '').split(',').map(s => s.trim()).filter(s => s);
             const excludeSelectors = (userSettings.excludeSelectors || '').split(',').map(s => s.trim()).filter(s => s);
@@ -1770,183 +1716,6 @@
             if (prevTag) processSelectedParagraph(prevTag);
         }
 
-        /* ========== HTTP 连接 ========== */
-        function connectHTTP() {
-            try {
-                // 如果已连接或正在连接，不要重复连接
-                if (isConnected || isConnecting) { return; }
-                
-                // 标记为正在连接状态
-                isConnecting = true;
-                
-                // 使用用户设置的API地址的基础部分
-                const baseUrl = userSettings.apiUrl;
-                
-                console.log('[LunaHTTP] 正在连接HTTP API：', baseUrl);
-                showMessage(MESSAGE[userSettings.language].connectingHTTP + baseUrl, 'info');
-
-                // 设置连接状态
-                updateStatus(MESSAGE[userSettings.language].connecting);
-                
-                // 进行简单的API测试请求
-                fetch(`${baseUrl}/api/translate?text=test`)
-                    .then(response => {
-                        if (response.ok) {
-                            isConnected = true;
-                            isConnecting = false;
-                            updateStatus(MESSAGE[userSettings.language].connected);
-                            console.log('[LunaHTTP] HTTP API连接成功');
-                            showMessage(MESSAGE[userSettings.language].connectedHTTP, 'success');
-                            
-                            // 清除可能存在的旧定时器
-                            if (heartbeatInterval) {clearInterval(heartbeatInterval);}
-                            
-                            // 设置定时发送健康检查请求
-                            heartbeatInterval = setInterval(function() {
-                                fetch(`${baseUrl}/api/translate?text=test`, { method: 'HEAD' })
-                                    .catch(error => {
-                                        console.error('[LunaHTTP] 健康检查失败:', error);
-                                        isConnected = false;
-                                        isConnecting = false;
-                                        updateStatus(MESSAGE[userSettings.language].connectingFailed);
-                                        showMessage(MESSAGE[userSettings.language].connectingFailed, 'error');
-                                        setTimeout(connectHTTP, 5000);
-                                        
-                                        if (heartbeatInterval) {
-                                            clearInterval(heartbeatInterval);
-                                            heartbeatInterval = null;
-                                        }
-                                    });
-                            }, 10000);
-
-                            // 通知所有iframe当前的连接状态
-                            updateConnectionStatusDisplay();
-                        } else {
-                            throw new Error('API测试请求失败');
-                        }
-                    })
-                    .catch(error => {
-                        console.error('[LunaHTTP] 连接HTTP API出错:', error);
-                        isConnected = false;
-                        isConnecting = false;
-                        updateStatus(MESSAGE[userSettings.language].connectingFailed);
-                        showMessage(MESSAGE[userSettings.language].connectingFailedLong, 'error');
-                        setTimeout(connectHTTP, 5000);
-                    });
-            } catch (error) {
-                console.error('[LunaHTTP] 连接HTTP API出错:', error);
-                isConnected = false;
-                isConnecting = false;
-                updateStatus(MESSAGE[userSettings.language].connectingFailed);
-                console.log('[LunaHTTP] 将在5秒后重试');
-                showMessage(MESSAGE[userSettings.language].connectingFailedLong, 'error');
-                setTimeout(connectHTTP, 5000);
-            }
-        }
-
-        // 更新连接状态指示器
-        function updateStatus(message) {
-            const indicator = document.querySelector('lunaws-status-main');
-            if (indicator) {
-                // 根据消息内容更新指示器状态
-                if (isConnected) {
-                    indicator.classList.add('connected');
-                } else {
-                    indicator.classList.remove('connected');
-                }
-                
-                // 更新悬停时显示的状态文本
-                indicator.setAttribute('data-status', message);
-            }
-            
-            // 更新连接跟踪器状态
-            if (window.top === window) {
-                // 这是主页面
-                connectionTracker.main.isConnected = isConnected;
-            } else {
-                // 通知主页面当前iframe的状态
-                try {
-                    window.parent.postMessage({
-                        type: 'lunaws-iframe-status',
-                        isConnected: isConnected,
-                        iframeId: clientId // 使用clientId作为iframe的唯一标识
-                    }, '*');
-                } catch (e) {
-                    console.error('[LunaHTTP] 无法向父窗口发送状态:', e);
-                }
-            }
-            
-            // 如果是主页面，则更新状态显示
-            if (window.top === window) {
-                updateConnectionStatusDisplay();
-            }
-        }
-        
-        // 更新连接状态显示
-        function updateConnectionStatusDisplay() {
-            const statusElement = document.getElementById('lunaws-status');
-            if (!statusElement) return;
-            
-            // 计算主页面和iframe的连接状态
-            const mainConnected = connectionTracker.main.isConnected ? 1 : 0;
-            
-            // 计算iframe连接状态
-            let connectedIframes = 0;
-            let totalIframes = Object.keys(connectionTracker.iframes).length;
-            
-            for (const iframeId in connectionTracker.iframes) {
-                if (connectionTracker.iframes[iframeId].isConnected) {
-                    connectedIframes++;
-                }
-            }
-            
-            // 计算状态颜色
-            let mainStatusClass = 'lunaws-status-red';
-            if (mainConnected === 1) {
-                mainStatusClass = 'lunaws-status-green';
-            }
-            
-            let iframeStatusClass = 'lunaws-status-red';
-            if (totalIframes > 0) {
-                const iframeRatio = connectedIframes / totalIframes;
-                if (iframeRatio === 1) {
-                    iframeStatusClass = 'lunaws-status-green';
-                } else if (iframeRatio > 0) {
-                    iframeStatusClass = 'lunaws-status-orange';
-                }
-            }
-            
-            // 构建HTML
-            statusElement.innerHTML = '';
-            
-            // 添加main状态
-            const mainSpan = document.createElement('span');
-            mainSpan.className = `lunaws-status-main ${mainStatusClass}`;
-            mainSpan.textContent = `main ${mainConnected}/1`;
-            statusElement.appendChild(mainSpan);
-            
-            // 如果自动播放模式开启，显示状态
-            if (isAutoPlayMode) {
-                const autoplaySpan = document.createElement('span');
-                autoplaySpan.className = 'lunaws-status-autoplay';
-                autoplaySpan.textContent = PANEL_TEXT[userSettings.language].autoPlayStatus;
-                statusElement.appendChild(autoplaySpan);
-            }
-            
-            // 添加iframe状态
-            const iframeSpan = document.createElement('span');
-
-            if (totalIframes === 0) {
-                iframeSpan.textContent = `iframe 0/0`;
-                iframeSpan.className = `lunaws-status-iframe lunaws-status-gray`;
-            } else {
-                iframeSpan.textContent = `iframe ${connectedIframes}/${totalIframes}`;
-                iframeSpan.className = `lunaws-status-iframe ${iframeStatusClass}`;
-            }
-            statusElement.appendChild(iframeSpan);
-        }
-
-
 
         /* ========== 按键事件 ========== */
         // 检查按键是否匹配用户设置
@@ -2010,9 +1779,6 @@
         function toggleAutoPlayMode() {
             isAutoPlayMode = !isAutoPlayMode;
             
-            // 更新状态显示
-            updateConnectionStatusDisplay();
-            
             // 显示当前模式状态
             const statusMessage = isAutoPlayMode ? 
                 MESSAGE[userSettings.language].autoPlayModeEnabled : 
@@ -2039,12 +1805,11 @@
             if (!currentParagraph) return;
 
             // 检查点击是否在以下区域内，如果是则不取消激活状态
-            if (e.target.closest('.lunaws-control-panel')) return;
-            if (e.target.closest('.lunaws-active-paragraph')) return;
-            if (e.target.closest('.lunaws-dictionary-popup')) return;
-            if (e.target.closest('.lunaws-translation-area')) return;
-            if (e.target.closest('.lunaws-settings-saved')) return;
-            if (e.target.closest('.lunaws-status-message')) return;
+            if (e.target.closest('.luna-control-panel')) return;
+            if (e.target.closest('.luna-active-paragraph')) return;
+            if (e.target.closest('.luna-dictionary-popup')) return;
+            if (e.target.closest('.luna-translation-area')) return;
+            if (e.target.closest('.luna-settings-saved')) return;
 
             // 其他区域点击时，恢复原始内容
             restoreOriginalContent();
@@ -2052,10 +1817,10 @@
 
         // 右键菜单阻止函数
         function handleContextMenu(event) {
-            if (event.target.classList.contains('lunaws-sentence') || 
-                event.target.classList.contains('lunaws-word') || 
-                event.target.classList.contains('lunaws-highlighted') ||
-                event.target.classList.contains('lunaws-active-paragraph')) {
+            if (event.target.classList.contains('luna-sentence') || 
+                event.target.classList.contains('luna-word') || 
+                event.target.classList.contains('luna-highlighted') ||
+                event.target.classList.contains('luna-active-paragraph')) {
                 event.preventDefault();
             }
         }
@@ -2067,7 +1832,7 @@
 
             // 通用的段落处理逻辑 - 对在线和离线模式都适用
             // 检查目标元素是否匹配段落选择器，或者是否在已处理的段落内
-            const isInsideActiveParagraph = element.closest && element.closest('.lunaws-active-paragraph');
+            const isInsideActiveParagraph = element.closest && element.closest('.luna-active-paragraph');
             if (isInsideActiveParagraph) return; // 如果点击的是已处理段落内的元素，直接返回
 
             // 查找匹配的段落元素
@@ -2112,17 +1877,17 @@
             if (currentParagraph === paragraph) return;
             
             // 移除预选高亮样式
-            paragraph.classList.remove('lunaws-highlighted');
+            paragraph.classList.remove('luna-highlighted');
 
             // 标记当前段落为活动状态
-            paragraph.classList.add('lunaws-active-paragraph');
+            paragraph.classList.add('luna-active-paragraph');
             
             // 根据垂直/水平设置添加对应的样式类
             if (userSettings.verticalPreference) {
-                paragraph.classList.add('lunaws-vertical-active-paragraph');
+                paragraph.classList.add('luna-vertical-active-paragraph');
                 console.log('[LunaHTTP] 使用垂直样式模式');
             } else {
-                paragraph.classList.add('lunaws-horizontal-active-paragraph');
+                paragraph.classList.add('luna-horizontal-active-paragraph');
                 console.log('[LunaHTTP] 使用水平样式模式');
             }
             
@@ -2164,7 +1929,7 @@
                     if (!data || data.length === 0) {
                         // 如果没有结果，恢复原始内容
                         paragraph.innerHTML = originalContent;
-                        paragraph.classList.remove('lunaws-active-paragraph');
+                        paragraph.classList.remove('luna-active-paragraph');
                         currentParagraph = null;
                         originalContent = null;
                         return;
@@ -2190,7 +1955,7 @@
                     console.error('[LunaHTTP] 分词请求失败:', error);
                     // 如果发送失败，恢复原始内容
                     paragraph.innerHTML = originalContent;
-                    paragraph.classList.remove('lunaws-active-paragraph');
+                    paragraph.classList.remove('luna-active-paragraph');
                     currentParagraph = null;
                     originalContent = null;
                     return;
@@ -2271,7 +2036,7 @@
             // 添加分词结果
             segments.forEach(segment => {
                 const wordSpanHtml = document.createElement('span');
-                wordSpanHtml.className = 'lunaws-word';
+                wordSpanHtml.className = 'luna-word';
                 wordSpanHtml.setAttribute('data-word', segment.orig);
 
                 // 判断原文和振假名是否实质相同
@@ -2334,7 +2099,7 @@
             tempDiv.innerHTML = segmentedContent;
             
             // 获取所有分词后的单词元素
-            const wordElements = Array.from(tempDiv.querySelectorAll('.lunaws-word'));
+            const wordElements = Array.from(tempDiv.querySelectorAll('.luna-word'));
             
             // 创建句子并添加到段落中
             const resultContainer = createSentencesFromWords(wordElements);
@@ -2347,7 +2112,7 @@
             attachWordEvents(currentParagraph);
             attachSentenceEvents(currentParagraph);
             
-            console.log('[LunaHTTP] 句子处理完成，句子数量:', currentParagraph.querySelectorAll('.lunaws-sentence').length);
+            console.log('[LunaHTTP] 句子处理完成，句子数量:', currentParagraph.querySelectorAll('.luna-sentence').length);
         }
 
         // 从单词创建句子
@@ -2357,7 +2122,7 @@
             
             // 创建句子分组变量
             let currentSentence = document.createElement('span');
-            currentSentence.className = 'lunaws-sentence';
+            currentSentence.className = 'luna-sentence';
             let currentSentenceLength = 0;
             const sentenceThreshold = userSettings.sentenceThreshold;
             
@@ -2386,7 +2151,7 @@
                     // 重置句子
                     if (i < wordElements.length - 1) {
                         currentSentence = document.createElement('span');
-                        currentSentence.className = 'lunaws-sentence';
+                        currentSentence.className = 'luna-sentence';
                         currentSentenceLength = 0;
                     }
                 }
@@ -2402,7 +2167,7 @@
 
         // 为单词添加事件处理
         function attachWordEvents(container) {
-            container.querySelectorAll('.lunaws-word').forEach(wordSpan => {
+            container.querySelectorAll('.luna-word').forEach(wordSpan => {
                 const word = wordSpan.getAttribute('data-word');
                 
                 // 添加鼠标悬停效果
@@ -2473,7 +2238,7 @@
 
         // 为句子添加事件处理
         function attachSentenceEvents(container) {
-            container.querySelectorAll('.lunaws-sentence').forEach(sentence => {
+            container.querySelectorAll('.luna-sentence').forEach(sentence => {
 
                 // 处理句子鼠标抬起事件
                 sentence.addEventListener('mouseup', (event) => {
@@ -2506,7 +2271,7 @@
                     event.stopPropagation();
                     
                     // 检查是否点击在句子或单词上，如果是则交给它们自己的处理程序
-                    if (event.target.closest('.lunaws-sentence') || event.target.closest('.lunaws-word')) {
+                    if (event.target.closest('.luna-sentence') || event.target.closest('.luna-word')) {
                         return;
                     }
                 }
@@ -2517,7 +2282,7 @@
                     event.stopPropagation();
                     
                     // 检查是否点击在句子或单词上，如果是则交给它们自己的处理程序
-                    if (event.target.closest('.lunaws-sentence') || event.target.closest('.lunaws-word')) {
+                    if (event.target.closest('.luna-sentence') || event.target.closest('.luna-word')) {
                         return;
                     }
                     readText(text, element);
@@ -2556,8 +2321,8 @@
             }
 
             // 添加视觉反馈
-            element.classList.add('lunaws-copy');
-            setTimeout(() => { element.classList.remove('lunaws-copy'); }, 500);
+            element.classList.add('luna-copy');
+            setTimeout(() => { element.classList.remove('luna-copy'); }, 500);
         }
 
 
@@ -2574,7 +2339,7 @@
                 removeTranslationArea();
 
                 const translationArea = document.createElement('div');
-                translationArea.className = 'lunaws-translation-area';
+                translationArea.className = 'luna-translation-area';
                 translationArea.setAttribute('data-text', text);
                 translationArea.style.display = 'none'; // 先隐藏翻译区域
 
@@ -2594,10 +2359,10 @@
                     translationArea.style.width = 'auto';
                     if (userSettings.verticalPreference) {
                         translationArea.style.marginRight = '4px';
-                        translationArea.classList.add('lunaws-vertical-translation-area');
+                        translationArea.classList.add('luna-vertical-translation-area');
                     } else {
                         translationArea.style.marginTop = '4px';
-                        translationArea.classList.add('lunaws-horizontal-translation-area');
+                        translationArea.classList.add('luna-horizontal-translation-area');
                     }
                     
                     // 将翻译区域插入到段落后面
@@ -2647,8 +2412,8 @@
 
                 const translationId = currentParagraph ? currentParagraph.getAttribute('data-translation-id') : null;
                 const translationArea = translationId ? 
-                    document.querySelector(`.lunaws-translation-area[data-paragraph-id="${translationId}"]`) : 
-                    document.querySelector('.lunaws-translation-area');
+                    document.querySelector(`.luna-translation-area[data-paragraph-id="${translationId}"]`) : 
+                    document.querySelector('.luna-translation-area');
                     
                 if (!translationArea) {
                     console.error('[LunaHTTP] 未找到翻译区域，创建新的翻译区域');
@@ -2690,26 +2455,26 @@
                 }
 
                 // 准备翻译容器
-                let translationsContainer = translationArea.querySelector('.lunaws-translations-container');
+                let translationsContainer = translationArea.querySelector('.luna-translations-container');
                 if (!translationsContainer) {
                     translationsContainer = document.createElement('div');
-                    translationsContainer.className = 'lunaws-translations-container';
+                    translationsContainer.className = 'luna-translations-container';
                     translationArea.innerHTML = '';
                     translationArea.appendChild(translationsContainer);
                 }
 
                 // 检查现有翻译块
-                let translationBlock = translationsContainer.querySelector(`.lunaws-translation-block[data-translator="${translatorName}"]`);
+                let translationBlock = translationsContainer.querySelector(`.luna-translation-block[data-translator="${translatorName}"]`);
 
                 if (translationBlock) {
                     // 更新现有翻译
-                    const contentElement = translationBlock.querySelector('.lunaws-translation-content');
+                    const contentElement = translationBlock.querySelector('.luna-translation-content');
                     if (contentElement) {
                         // 获取或创建翻译器名称span
-                        let translatorSpan = contentElement.querySelector('.lunaws-translator-header');
+                        let translatorSpan = contentElement.querySelector('.luna-translator-header');
                         if (!translatorSpan) {
                             translatorSpan = document.createElement('span');
-                            translatorSpan.className = 'lunaws-translator-header';
+                            translatorSpan.className = 'luna-translator-header';
                             translatorSpan.textContent = translatorName;
                         }
                         
@@ -2721,12 +2486,12 @@
                 } else {
                     // 创建新翻译块
                     translationBlock = document.createElement('div');
-                    translationBlock.className = 'lunaws-translation-block';
+                    translationBlock.className = 'luna-translation-block';
                     translationBlock.setAttribute('data-translator', translatorName);
                     
                     // 添加翻译器标题和内容
                     translationBlock.innerHTML = `
-                        <div class="lunaws-translation-content">${translationText} <span class="lunaws-translator-header">${translatorName}</span></div>
+                        <div class="luna-translation-content">${translationText} <span class="luna-translator-header">${translatorName}</span></div>
                     `;
                     
                     // 添加分隔线到翻译容器中（如果容器中已经有翻译块）
@@ -2751,7 +2516,7 @@
             const translationId = currentParagraph ? currentParagraph.getAttribute('data-translation-id') : null;
 
             if (translationId) {
-                const translationArea = document.querySelector(`.lunaws-translation-area[data-paragraph-id="${translationId}"]`);
+                const translationArea = document.querySelector(`.luna-translation-area[data-paragraph-id="${translationId}"]`);
                 if (translationArea) translationArea.remove();
                 
                 if (currentParagraph) {
@@ -2759,7 +2524,7 @@
                 }
             } else {
                 // 移除所有翻译区域（用于清理任何可能的孤立翻译区域）
-                document.querySelectorAll('.lunaws-translation-area').forEach(area => area.remove());
+                document.querySelectorAll('.luna-translation-area').forEach(area => area.remove());
             }
         }
 
@@ -2771,27 +2536,27 @@
             currentWordElement = wordElement;
 
             // 关闭已存在的弹窗
-            const existingPopup = document.querySelector('.lunaws-dictionary-popup');
+            const existingPopup = document.querySelector('.luna-dictionary-popup');
             if (existingPopup) existingPopup.remove();
 
             // 创建新弹窗
             const popup = document.createElement('div');
-            popup.className = 'lunaws-dictionary-popup';
+            popup.className = 'luna-dictionary-popup';
             popup.setAttribute('data-query-word', word); // 在弹窗上记录查询词
 
             // 创建查词输入框
             const searchBox = document.createElement('div');
-            searchBox.className = 'lunaws-search-box';
+            searchBox.className = 'luna-search-box';
 
             const searchInput = document.createElement('input');
             searchInput.type = 'text';
-            searchInput.className = 'lunaws-search-input';
+            searchInput.className = 'luna-search-input';
             searchInput.value = word;
             searchInput.placeholder = MESSAGE[userSettings.language].inputSearch;
 
             // 创建关闭按钮
             const closeButton = document.createElement('button');
-            closeButton.className = 'lunaws-close-button';
+            closeButton.className = 'luna-close-button';
             closeButton.innerHTML = '&times;'; // 使用 × 符号
             closeButton.title = 'close';
             closeButton.addEventListener('click', function(e) {
@@ -2875,8 +2640,8 @@
 
             // 创建iframe
             const iframe = document.createElement('iframe');
-            iframe.className = 'lunaws-dict-iframe';
-            iframe.setAttribute('data-lunaws-dictionary', 'true'); // 添加标识属性以便识别
+            iframe.className = 'luna-dict-iframe';
+            iframe.setAttribute('data-luna-dictionary', 'true'); // 添加标识属性以便识别
             popup.appendChild(iframe);
 
             // 防止事件冒泡和确保点击弹窗不会触发其他事件
@@ -3001,7 +2766,7 @@
 
             if (!currentWordElement) return;
 
-            const popup = document.querySelector('.lunaws-dictionary-popup');
+            const popup = document.querySelector('.luna-dictionary-popup');
             if (!popup) return;
 
             // 检查当前查询词与返回结果是否匹配
@@ -3019,7 +2784,7 @@
                 return;
             }
 
-            const iframe = popup.querySelector('.lunaws-dict-iframe');
+            const iframe = popup.querySelector('.luna-dict-iframe');
             if (!iframe) return;
 
             const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
@@ -3098,13 +2863,13 @@
         // 关闭词典选择和窗口的函数
         function clearDictionarySelection() {
             // 清除所有选中单词的高亮
-            document.querySelectorAll('.lunaws-word.selected').forEach(word => {
+            document.querySelectorAll('.luna-word.selected').forEach(word => {
                 word.classList.remove('selected');
                 word.style.backgroundColor = ''; // 清除背景色
             });
             
             // 关闭词典窗口
-            const dictionaryPopup = document.querySelector('.lunaws-dictionary-popup');
+            const dictionaryPopup = document.querySelector('.luna-dictionary-popup');
             if (dictionaryPopup) dictionaryPopup.remove();
             
             // 重置选择状态
@@ -3159,10 +2924,8 @@
                 });
 
             // 添加视觉反馈
-            if (element) {
-                element.classList.add('lunaws-reaction');
-                setTimeout(() => { element.classList.remove('lunaws-reaction'); }, 500);
-            }
+            element.classList.add('luna-reaction');
+            setTimeout(() => { element.classList.remove('luna-reaction'); }, 500);
 
             return success;
         }
@@ -3258,8 +3021,6 @@
                         console.log('自动播放模式：准备跳转到下一段');
                         setTimeout(() => {
                             navigateToNextParagraph();
-                            // 确保状态显示保持更新
-                            updateConnectionStatusDisplay();
                         }, 500); // 添加短暂延迟再跳转，提供更好的用户体验
                     }
                 };
@@ -3306,41 +3067,41 @@
         function showMessage(message, type = 'info', duration = 1500) {
             if (!userSettings.MessageToggle) return;
             // 确保样式表已添加
-            if (!document.querySelector('#lunaws-message-styles')) {
+            if (!document.querySelector('#luna-message-styles')) {
                 const styleSheet = document.createElement('style');
-                styleSheet.id = 'lunaws-message-styles';
+                styleSheet.id = 'luna-message-styles';
                 styleSheet.textContent = `
-                    .lunaws-message-container {
+                    .luna-message-container {
                         position: fixed; top: 20px; left: 20px;
                         max-width: 300px; z-index: 10000; 
                     }
-                    .lunaws-status-message {
+                    .luna-status-message {
                         color: white; padding: 8px; border-radius: 8px; font-size: .8em;
                         margin-bottom: 8px; box-shadow: 0 3px 10px rgba(0,0,0,0.2);
                         display: flex; align-items: center; opacity: 0; transform: translateX(50px);
                         transition: opacity 0.3s, transform 0.3s; cursor: default;
                     }
-                    .lunaws-message-icon { margin-right: 10px; font-size: .8em; }
-                    .lunaws-message-content { flex: 1; font-weight: 400; }
-                    .lunaws-status-message[data-type="info"] { background-color: rgba(33, 150, 243, 0.7); }
-                    .lunaws-status-message[data-type="success"] { background-color: rgba(76, 175, 80, 0.7); }
-                    .lunaws-status-message[data-type="warning"] { background-color: rgba(255, 152, 0, 0.7); }
-                    .lunaws-status-message[data-type="error"] { background-color: rgba(244, 67, 54, 0.7); }
+                    .luna-message-icon { margin-right: 10px; font-size: .8em; }
+                    .luna-message-content { flex: 1; font-weight: 400; }
+                    .luna-status-message[data-type="info"] { background-color: rgba(33, 150, 243, 0.7); }
+                    .luna-status-message[data-type="success"] { background-color: rgba(76, 175, 80, 0.7); }
+                    .luna-status-message[data-type="warning"] { background-color: rgba(255, 152, 0, 0.7); }
+                    .luna-status-message[data-type="error"] { background-color: rgba(244, 67, 54, 0.7); }
                 `;
                 document.head.appendChild(styleSheet);
             }
             
             // 创建或获取消息容器
-            let messageContainer = document.querySelector('.lunaws-message-container');
+            let messageContainer = document.querySelector('.luna-message-container');
             if (!messageContainer) {
                 messageContainer = document.createElement('div');
-                messageContainer.className = 'lunaws-message-container';
+                messageContainer.className = 'luna-message-container';
                 document.body.appendChild(messageContainer);
             }
             
             // 创建新的消息元素
             const statusDiv = document.createElement('div');
-            statusDiv.className = 'lunaws-status-message';
+            statusDiv.className = 'luna-status-message';
             statusDiv.dataset.type = type;
             
             // 设置图标
@@ -3351,8 +3112,8 @@
             
             // 创建消息内容结构
             statusDiv.innerHTML = `
-                <div class="lunaws-message-icon">${icon}</div>
-                <div class="lunaws-message-content">${message}</div>
+                <div class="luna-message-icon">${icon}</div>
+                <div class="luna-message-content">${message}</div>
             `;
             
             // 添加到容器
@@ -3409,10 +3170,10 @@
             }
 
             // 排除查词框iframe
-            if (iframe.classList.contains('lunaws-dict-iframe') || 
-                iframe.closest('.lunaws-dictionary-popup') || 
-                iframe.hasAttribute('data-lunaws-dictionary') ||
-                (iframe.parentElement && iframe.parentElement.closest('.lunaws-dictionary-popup'))) {
+            if (iframe.classList.contains('luna-dict-iframe') || 
+                iframe.closest('.luna-dictionary-popup') || 
+                iframe.hasAttribute('data-luna-dictionary') ||
+                (iframe.parentElement && iframe.parentElement.closest('.luna-dictionary-popup'))) {
                 console.log('跳过查词框iframe');
                 return; // 跳过查词框iframe
             }
@@ -3429,10 +3190,10 @@
                         if (injectedIframes.has(iframe)) return;
                         
                         // 再次检查是否为查词框iframe（可能在加载后添加了类名）
-                        if (iframe.classList.contains('lunaws-dict-iframe') || 
-                            iframe.closest('.lunaws-dictionary-popup') || 
-                            iframe.hasAttribute('data-lunaws-dictionary') ||
-                            (iframe.parentElement && iframe.parentElement.closest('.lunaws-dictionary-popup'))) {
+                        if (iframe.classList.contains('luna-dict-iframe') || 
+                            iframe.closest('.luna-dictionary-popup') || 
+                            iframe.hasAttribute('data-luna-dictionary') ||
+                            (iframe.parentElement && iframe.parentElement.closest('.luna-dictionary-popup'))) {
                             console.log('跳过查词框iframe');
                             return;
                         }
@@ -3454,7 +3215,7 @@
             const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
             
             // 检查是否已注入
-            if (iframeDoc.querySelector('script[data-lunaws-injected]')) {
+            if (iframeDoc.querySelector('script[data-luna-injected]')) {
                 console.log('此iframe已注入过Luna WS，跳过');
                 return;
             }
@@ -3475,7 +3236,7 @@
             // 创建script标签并添加到iframe
             const script = iframeDoc.createElement('script');
             script.src = url;
-            script.setAttribute('data-lunaws-injected', 'true'); // 添加标记
+            script.setAttribute('data-luna-injected', 'true'); // 添加标记
             iframeDoc.head.appendChild(script);
             
             // 清理Blob URL
@@ -3499,4 +3260,5 @@
     // 对于动态加载的iframe，定期检查并注入
     setInterval(injectToIframes, 3000);
 })() 
+
 
