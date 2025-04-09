@@ -1,12 +1,12 @@
 // ==UserScript==
-// @name         Luna-WS
+// @name         Luna-HTTP
 // @namespace    http://tampermonkey.net/
 // @version      0.1.0
-// @description  通过WebSocket连接LunaTranslator实现浏览器上的原文的分词、翻译和查词功能 
+// @description  通过HTTP API连接LunaTranslator实现浏览器上的原文的分词、翻译和查词功能 
 // @author       Raindrop213
 // @match        *://**/*
-// @updateURL    https://raw.githubusercontent.com/raindrop213/Luna-WS/main/luna-ws.js
-// @downloadURL  https://raw.githubusercontent.com/raindrop213/Luna-WS/main/luna-ws.js
+// @updateURL    https://raw.githubusercontent.com/raindrop213/Luna-HTTP/main/luna-http.js
+// @downloadURL  https://raw.githubusercontent.com/raindrop213/Luna-HTTP/main/luna-http.js
 // @grant        none
 // @run-at       document-end
 // ==/UserScript==
@@ -22,7 +22,7 @@
         // 默认用户设置
         const LUNA_DEFAULT_SETTINGS = {
             language: 'zh', // 默认使用中文
-            wsUrl: 'ws://localhost:6619',
+            apiUrl: 'http://localhost:2333',
             floatingTranslation: true,
             verticalPreference: false,
             scrollToParagraph: true,
@@ -55,7 +55,7 @@
         // 定义设置验证函数 - 确保关键属性存在且类型正确
         function validateUserSettings(settings) {
             if (!settings || typeof settings !== 'object') {
-                console.error('[LunaWS] 设置格式无效，使用默认设置');
+                console.error('[LunaHTTP] 设置格式无效，使用默认设置');
                 return JSON.parse(JSON.stringify(LUNA_DEFAULT_SETTINGS));
             }
             
@@ -78,7 +78,7 @@
                         : defaults[key];
                     
                     if (settings[key] && validatedSettings[key] !== settings[key]) {
-                        console.warn(`[LunaWS] 语言设置无效: "${settings[key]}"，使用默认值: "${defaults[key]}"`);
+                        console.warn(`[LunaHTTP] 语言设置无效: "${settings[key]}"，使用默认值: "${defaults[key]}"`);
                     }
                     continue;
                 }
@@ -100,7 +100,7 @@
                     validatedSettings[key] = defaults[key];
                     
                     if (settings.hasOwnProperty(key)) {
-                        console.warn(`[LunaWS] 设置"${key}"类型不匹配 (期望${expectedType}，实际${actualType})，使用默认值`);
+                        console.warn(`[LunaHTTP] 设置"${key}"类型不匹配 (期望${expectedType}，实际${actualType})，使用默认值`);
                     }
                 }
             }
@@ -278,16 +278,16 @@
                         // 强制覆盖位置设置
                         userSettings.panelPosition = panelPosition;
                         
-                        console.log('[LunaWS] 已加载并验证设置:', userSettings);
+                        console.log('[LunaHTTP] 已加载并验证设置:', userSettings);
                         
                         // 特别检查verticalPreference设置
-                        console.log(`[LunaWS] 垂直偏好设置加载状态: ${userSettings.verticalPreference}`);
+                        console.log(`[LunaHTTP] 垂直偏好设置加载状态: ${userSettings.verticalPreference}`);
                     } catch (e) {
-                        console.error('[LunaWS] 解析保存的设置失败:', e);
+                        console.error('[LunaHTTP] 解析保存的设置失败:', e);
                         // 保持默认设置
                     }
                 } else {
-                    console.log('[LunaWS] 未找到保存的设置，使用默认设置');
+                    console.log('[LunaHTTP] 未找到保存的设置，使用默认设置');
                 }
             } catch (e) {
                 console.error('初始化用户设置时出错:', e);
@@ -448,7 +448,7 @@
             
             // 确保已经初始化了用户设置并验证语言设置
             if (!userSettings || !userSettings.language || (userSettings.language !== 'zh' && userSettings.language !== 'en')) {
-                console.error('[LunaWS] 创建控制面板时用户设置或语言无效，重新验证设置');
+                console.error('[LunaHTTP] 创建控制面板时用户设置或语言无效，重新验证设置');
                 
                 // 重新验证或使用默认设置
                 if (userSettings && typeof userSettings === 'object') {
@@ -461,7 +461,7 @@
             // 获取有效的语言设置
             const lang = userSettings.language || 'zh';
 
-            console.log('[LunaWS] 创建控制面板，当前语言:', lang, 'userSettings:', userSettings);
+            console.log('[LunaHTTP] 创建控制面板，当前语言:', lang, 'userSettings:', userSettings);
             panel.innerHTML = `
                 <div class="lunaws-header">
                     <div class="lunaws-title">LunaWS</div>
@@ -487,7 +487,7 @@
                         </div>
                         <div class="lunaws-settings-row">
                             <label>${PANEL_TEXT[lang].serverUrl}</label>
-                            <input type="text" id="lunaws-ws-url" value="${userSettings.wsUrl || 'ws://localhost:6619'}">
+                            <input type="text" id="lunaws-url" value="${userSettings.apiUrl || 'http://localhost:2333'}">
                         </div>
                         <div class="lunaws-settings-row">
                             <label>${PANEL_TEXT[lang].WindowStyle}</label>
@@ -645,7 +645,7 @@
             try {
                 // 验证控件是否已创建
                 if (!document.getElementById('lunaws-include-selectors')) {
-                    console.log('[LunaWS] 控件尚未创建，无法设置事件');
+                    console.log('[LunaHTTP] 控件尚未创建，无法设置事件');
                     return;
                 }
                 
@@ -738,9 +738,9 @@
                     }
                 });
                 
-                console.log('[LunaWS] 控制面板事件设置完成');
+                console.log('[LunaHTTP] 控制面板事件设置完成');
             } catch (e) {
-                console.error('[LunaWS] 设置控制面板事件时出错:', e);
+                console.error('[LunaHTTP] 设置控制面板事件时出错:', e);
             }
         }
     
@@ -750,7 +750,7 @@
             if (document.getElementById('lunaws-include-selectors')) {
                 const newSettings = {
                     language: document.getElementById('lunaws-language').value,
-                    wsUrl: document.getElementById('lunaws-ws-url').value,
+                    apiUrl: document.getElementById('lunaws-url').value,
                     floatingTranslation: document.getElementById('lunaws-floating-translation').checked,
                     verticalPreference: document.getElementById('lunaws-vertical-preference').checked,
                     scrollToParagraph: document.getElementById('lunaws-scroll-to-paragraph').checked,
@@ -859,7 +859,7 @@
                 
                 // 确保用户设置已初始化且语言设置有效
                 if (!userSettings || !userSettings.language || (userSettings.language !== 'zh' && userSettings.language !== 'en')) {
-                    console.warn('[LunaWS] 切换面板时发现用户设置无效，重新验证');
+                    console.warn('[LunaHTTP] 切换面板时发现用户设置无效，重新验证');
                     // 验证设置，确保语言设置有效
                     if (userSettings && typeof userSettings === 'object') {
                         userSettings = validateUserSettings(userSettings);
@@ -893,22 +893,22 @@
                     localStorage.setItem('lunaws-settings', JSON.stringify(settings));
                 }
                 
-                console.log('[LunaWS] 面板状态已切换');
+                console.log('[LunaHTTP] 面板状态已切换');
             } catch (e) {
-                console.error('[LunaWS] 切换控制面板时出错:', e);
+                console.error('[LunaHTTP] 切换控制面板时出错:', e);
             }
         }
 
         // 创建控制面板（只在主页面中执行）
         function ensureControlPanel() {
             if (window.top !== window.self) {
-                console.log("[Luna WS] 当前是iframe，跳过创建控制面板");
+                console.log("[LunaHTTP] 当前是iframe，跳过创建控制面板");
                 return;
             }
-            console.log("[Luna WS] 尝试创建控制面板");
+            console.log("[LunaHTTP] 尝试创建控制面板");
             // 确保用户设置已初始化
             if (!userSettings || !userSettings.language) {
-                console.warn('[LunaWS] 创建控制面板前用户设置未正确初始化，重新初始化');
+                console.warn('[LunaHTTP] 创建控制面板前用户设置未正确初始化，重新初始化');
                 // 尝试从localStorage加载
                 try {
                     const savedSettings = localStorage.getItem('lunaws-settings');
@@ -918,7 +918,7 @@
                             // 使用验证函数确保设置有效
                             userSettings = validateUserSettings(parsedSettings);
                         } catch (e) {
-                            console.error('[LunaWS] 解析设置失败', e);
+                            console.error('[LunaHTTP] 解析设置失败', e);
                             userSettings = JSON.parse(JSON.stringify(LUNA_DEFAULT_SETTINGS));
                         }
                     } else {
@@ -926,7 +926,7 @@
                         userSettings = JSON.parse(JSON.stringify(LUNA_DEFAULT_SETTINGS));
                     }
                 } catch (e) {
-                    console.error('[LunaWS] 紧急初始化设置失败', e);
+                    console.error('[LunaHTTP] 紧急初始化设置失败', e);
                     userSettings = JSON.parse(JSON.stringify(LUNA_DEFAULT_SETTINGS));
                 }
             }
@@ -938,9 +938,9 @@
             setTimeout(() => {
                 const panel = document.getElementById('lunaws-panel');
                 if (!panel) {
-                    console.error('[LunaWS] 控制面板创建失败，未找到面板元素');
+                    console.error('[LunaHTTP] 控制面板创建失败，未找到面板元素');
                 } else {
-                    console.log('[LunaWS] 控制面板创建成功');
+                    console.log('[LunaHTTP] 控制面板创建成功');
                 }
             }, 500);
         }
@@ -1101,9 +1101,9 @@
                 "disconnected": "Disconnected",
                 "connectingFailed": "Connection failed, retrying...",
                 "connectingFailedLong": "Connection failed, will retry in 3 seconds...",
-                "notConnectedOfflineDisabled": "Not connected to WebSocket and offline mode is disabled. Trying to connect...",
-                "connectingWebSocket": "Connecting: ",
-                "connectedWebSocket": "WebSocket connected successfully √",
+                "notConnectedOfflineDisabled": "Not connected to HTTP and offline mode is disabled. Trying to connect...",
+                "connectingHTTP": "Connecting: ",
+                "connectedHTTP": "HTTP connected successfully √",
                 "autoPlayModeEnabled": "Auto-play mode enabled ↻",
                 "autoPlayModeDisabled": "Auto-play mode disabled"
             },
@@ -1121,9 +1121,9 @@
                 "disconnected": "已断开连接",
                 "connectingFailed": "连接失败，正在重试...",
                 "connectingFailedLong": "连接失败，将在3秒后尝试重新连接",
-                "notConnectedOfflineDisabled": "未连接到WebSocket且非离线模式，无法处理段落。正在尝试连接...",
-                "connectingWebSocket": "正在自动连接：",
-                "connectedWebSocket": "WebSocket已成功连接 √",
+                "notConnectedOfflineDisabled": "未连接到HTTP且非离线模式，无法处理段落。正在尝试连接...",
+                "connectingHTTP": "正在自动连接：",
+                "connectedHTTP": "HTTP已成功连接 √",
                 "autoPlayModeEnabled": "自动播放模式已启用 ↻",
                 "autoPlayModeDisabled": "自动播放模式已禁用"
             }
@@ -1132,7 +1132,7 @@
         /* ========== 初始化函数 ========== */
         function init() {
             try {
-                console.log('[LunaWS] 初始化 Luna-WS...');
+                console.log('[LunaHTTP] 初始化 Luna-WS...');
 
                 // 从存储中恢复用户设置
                 loadUserSettings();
@@ -1190,9 +1190,9 @@
                 // 初始化时先执行一次，连接状态显示
                 setTimeout(updateConnectionStatusDisplay, 1000);
                 
-                console.log('[LunaWS] 初始化完成');
+                console.log('[LunaHTTP] 初始化完成');
             } catch (err) {
-                console.error('[LunaWS] 初始化失败:', err);
+                console.error('[LunaHTTP] 初始化失败:', err);
             }
         }
 
@@ -1209,13 +1209,13 @@
                         // 解析并验证设置
                         const parsedSettings = JSON.parse(savedSettings);
                         userSettings = validateUserSettings(parsedSettings);
-                        console.log('[LunaWS] 已加载并验证设置:', userSettings);
+                        console.log('[LunaHTTP] 已加载并验证设置:', userSettings);
                     } catch (e) {
-                        console.error('[LunaWS] 解析保存的设置失败:', e);
+                        console.error('[LunaHTTP] 解析保存的设置失败:', e);
                         // 保持默认设置
                     }
                 } else {
-                    console.log('[LunaWS] 未找到保存的设置，使用默认设置（默认语言：' + userSettings.language + '）');
+                    console.log('[LunaHTTP] 未找到保存的设置，使用默认设置（默认语言：' + userSettings.language + '）');
                 }
             } catch (e) {
                 console.error('读取设置时出错:', e);
@@ -1607,7 +1607,7 @@
                         return null; // 如果匹配排除选择器，直接返回null
                     }
                 } catch (e) {
-                    console.error('[LunaWS] Invalid exclude selector:', selector, e);
+                    console.error('[LunaHTTP] Invalid exclude selector:', selector, e);
                 }
             }
 
@@ -1618,7 +1618,7 @@
                         return null; // 如果匹配排除的class或id，直接返回null
                     }
                 } catch (e) {
-                    console.error('[LunaWS] Invalid exclude class/id selector:', selector, e);
+                    console.error('[LunaHTTP] Invalid exclude class/id selector:', selector, e);
                 }
             }
 
@@ -1633,7 +1633,7 @@
                         }
                     }
                 } catch (e) {
-                    console.error('[LunaWS] Invalid include selector:', selector, e);
+                    console.error('[LunaHTTP] Invalid include selector:', selector, e);
                 }
             }
 
@@ -1647,7 +1647,7 @@
                         }
                     }
                 } catch (e) {
-                    console.error('[LunaWS] Invalid include class/id selector:', selector, e);
+                    console.error('[LunaHTTP] Invalid include class/id selector:', selector, e);
                 }
             }
 
@@ -1770,8 +1770,8 @@
             if (prevTag) processSelectedParagraph(prevTag);
         }
 
-        /* ========== WebSocket 连接 ========== */
-        function connectWebSocket() {
+        /* ========== HTTP 连接 ========== */
+        function connectHTTP() {
             try {
                 // 如果已连接或正在连接，不要重复连接
                 if (isConnected || isConnecting) { return; }
@@ -1780,10 +1780,10 @@
                 isConnecting = true;
                 
                 // 使用用户设置的WebSocket地址
-                const url = userSettings.wsUrl;
+                const url = userSettings.apiUrl;
                 
-                console.log('[LunaWS] 正在自动连接：', url);
-                showMessage(MESSAGE[userSettings.language].connectingWebSocket + url, 'info');
+                console.log('[LunaHTTP] 正在自动连接：', url);
+                showMessage(MESSAGE[userSettings.language].connectingHTTP + url, 'info');
 
                 // 设置连接状态
                 updateStatus(MESSAGE[userSettings.language].connecting);
@@ -1795,8 +1795,8 @@
                     isConnected = true;
                     isConnecting = false;
                     updateStatus(MESSAGE[userSettings.language].connected);
-                    console.log('[LunaWS] WebSocket连接成功');
-                    showMessage(MESSAGE[userSettings.language].connectedWebSocket, 'success');
+                    console.log('[LunaHTTP] HTTP连接成功');
+                    showMessage(MESSAGE[userSettings.language].connectedHTTP, 'success');
 
                     // 清除可能存在的旧定时器
                     if (heartbeatInterval) {clearInterval(heartbeatInterval);}
@@ -1811,7 +1811,7 @@
                                     clientId: clientId
                                 }));
                             } catch (e) {
-                                console.error('[LunaWS] 心跳消息发送失败');
+                                console.error('[LunaHTTP] 心跳消息发送失败');
                                 // 如果发送失败，尝试重连
                                 if (isConnected) {
                                     isConnected = false; // 先标记为未连接
@@ -1819,7 +1819,7 @@
                                     updateStatus(MESSAGE[userSettings.language].connectingFailed);
                                     // 显示连接失败提示
                                     showMessage(MESSAGE[userSettings.language].connectingFailed, 'error');
-                                    setTimeout(connectWebSocket, 5000);
+                                    setTimeout(connectHTTP, 5000);
                                 }
                             }
                         } else {
@@ -1843,7 +1843,7 @@
                     }
                     // 显示断开连接提示
                     showMessage(MESSAGE[userSettings.language].disconnected, 'warning');
-                    setTimeout(connectWebSocket, 5000);
+                    setTimeout(connectHTTP, 5000);
                 };
                 
                 socket.onerror = function(error) {
@@ -1856,17 +1856,17 @@
                     }
                     // 显示连接错误提示
                     showMessage(MESSAGE[userSettings.language].connectingFailed, 'error');
-                    setTimeout(connectWebSocket, 5000);
+                    setTimeout(connectHTTP, 5000);
                 };
             } catch (error) {
-                console.error('[LunaWS] 连接WebSocket出错');
+                console.error('[LunaHTTP] 连接WebSocket出错');
                 isConnected = false;
                 isConnecting = false;
                 updateStatus(MESSAGE[userSettings.language].connectingFailed);
-                console.log('[LunaWS] 将在5秒后重试');
+                console.log('[LunaHTTP] 将在5秒后重试');
                 // 显示连接失败提示
                 showMessage(MESSAGE[userSettings.language].connectingFailedLong, 'error');
-                setTimeout(connectWebSocket, 5000);
+                setTimeout(connectHTTP, 5000);
             }
         }
 
@@ -1898,7 +1898,7 @@
                         iframeId: clientId // 使用clientId作为iframe的唯一标识
                     }, '*');
                 } catch (e) {
-                    console.error('[LunaWS] 无法向父窗口发送状态:', e);
+                    console.error('[LunaHTTP] 无法向父窗口发送状态:', e);
                 }
             }
             
@@ -1980,7 +1980,7 @@
                 try {
                     msgObj = typeof message === 'string' ? JSON.parse(message) : message;
                 } catch (e) {
-                    console.error('[LunaWS] 解析消息时出错:', e);
+                    console.error('[LunaHTTP] 解析消息时出错:', e);
                     return false;
                 }
                 
@@ -1991,13 +1991,13 @@
                 // 将对象转换回字符串并发送
                 const finalMessage = JSON.stringify(msgObj);
                 socket.send(finalMessage);
-                console.log('[LunaWS] 已发送消息:', finalMessage);
+                console.log('[LunaHTTP] 已发送消息:', finalMessage);
                 return true;
             } else {
-                console.log('[LunaWS] 未连接到服务器，尝试重新连接');
+                console.log('[LunaHTTP] 未连接到服务器，尝试重新连接');
                 // 尝试重新连接，但仅在未连接且不在连接过程中时
                 if (!isConnected && !isConnecting) {
-                    connectWebSocket();
+                    connectHTTP();
                 }
                 return false;
             }
@@ -2014,7 +2014,7 @@
                     return;
                 }
                 
-                console.log('[LunaWS] 收到消息类型:', data.type);
+                console.log('[LunaHTTP] 收到消息类型:', data.type);
                 
                 switch (data.type) {
                     case 'segment_result':
@@ -2033,12 +2033,12 @@
                         // 心跳响应不需要处理
                         break;
                     default:
-                        console.log('[LunaWS] 未知消息类型:', data.type);
+                        console.log('[LunaHTTP] 未知消息类型:', data.type);
                         break;
                 }
             } catch (e) {
                 // 不是JSON，按原样传递给翻译处理函数
-                console.log('[LunaWS] Received non-JSON message:', message);
+                console.log('[LunaHTTP] Received non-JSON message:', message);
             }
         }
 
@@ -2177,7 +2177,7 @@
 
             // 检查段落是否有效或有足够的内容
             if (!originalText) {
-                console.log('[LunaWS] 跳过空内容段落');
+                console.log('[LunaHTTP] 跳过空内容段落');
                 return;
             }
             
@@ -2189,12 +2189,12 @@
             const maxLength = parseInt(userSettings.maxContentLength) || 1000;
             
             if (textLength < minLength) {
-                console.log(`[LunaWS] 跳过内容长度不足的段落 (${textLength} < ${minLength})`);
+                console.log(`[LunaHTTP] 跳过内容长度不足的段落 (${textLength} < ${minLength})`);
                 return;
             }
             
             if (textLength > maxLength) {
-                console.log(`[LunaWS] 跳过内容过长的段落 (${textLength} > ${maxLength})`);
+                console.log(`[LunaHTTP] 跳过内容过长的段落 (${textLength} > ${maxLength})`);
                 return;
             }
 
@@ -2215,10 +2215,10 @@
             // 根据垂直/水平设置添加对应的样式类
             if (userSettings.verticalPreference) {
                 paragraph.classList.add('lunaws-vertical-active-paragraph');
-                console.log('[LunaWS] 使用垂直样式模式');
+                console.log('[LunaHTTP] 使用垂直样式模式');
             } else {
                 paragraph.classList.add('lunaws-horizontal-active-paragraph');
-                console.log('[LunaWS] 使用水平样式模式');
+                console.log('[LunaHTTP] 使用水平样式模式');
             }
             
             currentParagraph = paragraph;
@@ -2313,12 +2313,12 @@
                 try {
                     processSegmentedContentIntoSentences(segmentedContent);
                 } catch (err) {
-                    console.error('[LunaWS] 处理句子时出错:', err);
+                    console.error('[LunaHTTP] 处理句子时出错:', err);
                     // 发生错误时使用简单模式显示结果
                     currentParagraph.innerHTML = segmentedContent;
                 }
             } catch (error) {
-                console.error('[LunaWS] 处理分词结果时出错:', error);
+                console.error('[LunaHTTP] 处理分词结果时出错:', error);
                 if (currentParagraph) {
                     currentParagraph.innerHTML = '分词处理错误: ' + error.message;
                 }
@@ -2399,7 +2399,7 @@
             attachWordEvents(currentParagraph);
             attachSentenceEvents(currentParagraph);
             
-            console.log('[LunaWS] 句子处理完成，句子数量:', currentParagraph.querySelectorAll('.lunaws-sentence').length);
+            console.log('[LunaHTTP] 句子处理完成，句子数量:', currentParagraph.querySelectorAll('.lunaws-sentence').length);
         }
 
         // 从单词创建句子
@@ -2587,10 +2587,10 @@
             if (navigator.clipboard && navigator.clipboard.writeText) {
                 navigator.clipboard.writeText(text)
                     .then(() => {
-                        console.log('[LunaWS] 文本已复制到剪贴板');
+                        console.log('[LunaHTTP] 文本已复制到剪贴板');
                     })
                     .catch(err => {
-                        console.error('[LunaWS] 复制失败:', err);
+                        console.error('[LunaHTTP] 复制失败:', err);
                         // 如果API不可用，使用传统方法
                         fallbackCopyTextToClipboard(text);
                     });
@@ -2618,11 +2618,11 @@
         function translateText(text) {
             try {
                 if (!currentParagraph || !text) {
-                    console.error('[LunaWS] 无法翻译：无当前段落或文本为空');
+                    console.error('[LunaHTTP] 无法翻译：无当前段落或文本为空');
                     return;
                 }
 
-                console.log('[LunaWS] 开始翻译文本:', text.substring(0, 30) + '...');
+                console.log('[LunaHTTP] 开始翻译文本:', text.substring(0, 30) + '...');
                 removeTranslationArea();
 
                 const translationArea = document.createElement('div');
@@ -2666,23 +2666,23 @@
                 }));
 
                 if (!sent) {
-                    console.error('[LunaWS] 翻译请求发送失败');
+                    console.error('[LunaHTTP] 翻译请求发送失败');
                     translationArea.innerHTML = '<div style="padding:10px;color:red;text-align:center;">翻译请求发送失败</div>';
                 } else {
-                    console.log('[LunaWS] 翻译请求已发送');
+                    console.log('[LunaHTTP] 翻译请求已发送');
                 }
             } catch (error) {
-                console.error('[LunaWS] 翻译过程中出错:', error);
+                console.error('[LunaHTTP] 翻译过程中出错:', error);
             }
         }
 
         // 处理翻译结果
         function handleTranslationResult(data) {
             try {
-                console.log('[LunaWS] 收到翻译结果:', data);
+                console.log('[LunaHTTP] 收到翻译结果:', data);
                 
                 if (!currentParagraph) {
-                    console.error('[LunaWS] 没有当前段落，无法处理翻译结果');
+                    console.error('[LunaHTTP] 没有当前段落，无法处理翻译结果');
                     return;
                 }
 
@@ -2692,7 +2692,7 @@
                     document.querySelector('.lunaws-translation-area');
                     
                 if (!translationArea) {
-                    console.error('[LunaWS] 未找到翻译区域，创建新的翻译区域');
+                    console.error('[LunaHTTP] 未找到翻译区域，创建新的翻译区域');
                     // 如果找不到翻译区域，尝试重新创建一个
                     translateText(removeRubyText(currentParagraph));
                     return;
@@ -2715,7 +2715,7 @@
                 if (data.type === 'translation_result' && data.source_text) {
                     const currentText = translationArea.getAttribute('data-text');
                     if (currentText && currentText !== data.source_text) {
-                        console.log('[LunaWS] 翻译原文不匹配，跳过此结果');
+                        console.log('[LunaHTTP] 翻译原文不匹配，跳过此结果');
                         return;
                     }
                 }
@@ -2726,7 +2726,7 @@
 
                 // 如果没有翻译内容，则不显示
                 if (!translationText.trim()) {
-                    console.log('[LunaWS] 翻译内容为空，不显示');
+                    console.log('[LunaHTTP] 翻译内容为空，不显示');
                     return;
                 }
 
@@ -2781,9 +2781,9 @@
 
                 // 显示翻译区域
                 translationArea.style.display = '';
-                console.log(`[LunaWS] 【${translatorName}】翻译显示成功`);
+                console.log(`[LunaHTTP] 【${translatorName}】翻译显示成功`);
             } catch (error) {
-                console.error('[LunaWS] 处理翻译结果时出错:', error);
+                console.error('[LunaHTTP] 处理翻译结果时出错:', error);
             }
         }
 
@@ -3343,7 +3343,7 @@
     // 注入到主页
     const lunaWSCode = getLunaWSCode();
     lunaWSCode();
-    console.log("[Luna WS] 在主页面初始化完成");
+    console.log("[LunaHTTP] 在主页面初始化完成");
 
     // 标记已注入的iframe
     const injectedIframes = new WeakSet();
@@ -3416,7 +3416,7 @@
             // 创建脚本
             const scriptText = `
                 (${lunaWSCode})();
-                console.log("[Luna WS] 在iframe中初始化完成");
+                console.log("[LunaHTTP] 在iframe中初始化完成");
             `;
             
             // 使用Blob URL创建脚本
