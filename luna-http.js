@@ -22,7 +22,7 @@
         // 默认用户设置
         const LUNA_DEFAULT_SETTINGS = {
             language: 'zh', // 默认使用中文
-            apiUrl: 'http://localhost:2333',
+            apiUrl: 'http://127.0.0.1:2333',
             floatingTranslation: true,
             verticalPreference: false,
             scrollToParagraph: true,
@@ -487,7 +487,7 @@
                         </div>
                         <div class="lunaws-settings-row">
                             <label>${PANEL_TEXT[lang].serverUrl}</label>
-                            <input type="text" id="lunaws-url" value="${userSettings.apiUrl || 'http://localhost:2333'}">
+                            <input type="text" id="lunaws-url" value="${userSettings.apiUrl || 'http://127.0.0.1:2333'}">
                         </div>
                         <div class="lunaws-settings-row">
                             <label>${PANEL_TEXT[lang].WindowStyle}</label>
@@ -1779,92 +1779,66 @@
                 // 标记为正在连接状态
                 isConnecting = true;
                 
-                // 使用用户设置的WebSocket地址
-                const url = userSettings.apiUrl;
+                // 使用用户设置的API地址的基础部分
+                const baseUrl = userSettings.apiUrl;
                 
-                console.log('[LunaHTTP] 正在自动连接：', url);
-                showMessage(MESSAGE[userSettings.language].connectingHTTP + url, 'info');
+                console.log('[LunaHTTP] 正在连接HTTP API：', baseUrl);
+                showMessage(MESSAGE[userSettings.language].connectingHTTP + baseUrl, 'info');
 
                 // 设置连接状态
                 updateStatus(MESSAGE[userSettings.language].connecting);
                 
-                // 创建WebSocket连接
-                socket = new WebSocket(url);
-                
-                socket.onopen = function() {
-                    isConnected = true;
-                    isConnecting = false;
-                    updateStatus(MESSAGE[userSettings.language].connected);
-                    console.log('[LunaHTTP] HTTP连接成功');
-                    showMessage(MESSAGE[userSettings.language].connectedHTTP, 'success');
+                // 进行简单的API测试请求
+                fetch(`${baseUrl}/api/translate?text=test`)
+                    .then(response => {
+                        if (response.ok) {
+                            isConnected = true;
+                            isConnecting = false;
+                            updateStatus(MESSAGE[userSettings.language].connected);
+                            console.log('[LunaHTTP] HTTP API连接成功');
+                            showMessage(MESSAGE[userSettings.language].connectedHTTP, 'success');
+                            
+                            // 清除可能存在的旧定时器
+                            if (heartbeatInterval) {clearInterval(heartbeatInterval);}
+                            
+                            // 设置定时发送健康检查请求
+                            heartbeatInterval = setInterval(function() {
+                                fetch(`${baseUrl}/api/translate?text=test`, { method: 'HEAD' })
+                                    .catch(error => {
+                                        console.error('[LunaHTTP] 健康检查失败:', error);
+                                        isConnected = false;
+                                        isConnecting = false;
+                                        updateStatus(MESSAGE[userSettings.language].connectingFailed);
+                                        showMessage(MESSAGE[userSettings.language].connectingFailed, 'error');
+                                        setTimeout(connectHTTP, 5000);
+                                        
+                                        if (heartbeatInterval) {
+                                            clearInterval(heartbeatInterval);
+                                            heartbeatInterval = null;
+                                        }
+                                    });
+                            }, 10000);
 
-                    // 清除可能存在的旧定时器
-                    if (heartbeatInterval) {clearInterval(heartbeatInterval);}
-                    
-                    // 设置定时发送握手请求
-                    heartbeatInterval = setInterval(function() {
-                        if (socket && isConnected) {
-                            try {
-                                // 发送心跳消息
-                                socket.send(JSON.stringify({
-                                    type: 'heartbeat',
-                                    clientId: clientId
-                                }));
-                            } catch (e) {
-                                console.error('[LunaHTTP] 心跳消息发送失败');
-                                // 如果发送失败，尝试重连
-                                if (isConnected) {
-                                    isConnected = false; // 先标记为未连接
-                                    isConnecting = false; // 重置连接中状态
-                                    updateStatus(MESSAGE[userSettings.language].connectingFailed);
-                                    // 显示连接失败提示
-                                    showMessage(MESSAGE[userSettings.language].connectingFailed, 'error');
-                                    setTimeout(connectHTTP, 5000);
-                                }
-                            }
+                            // 通知所有iframe当前的连接状态
+                            updateConnectionStatusDisplay();
                         } else {
-                            clearInterval(heartbeatInterval);
-                            heartbeatInterval = null;
+                            throw new Error('API测试请求失败');
                         }
-                    }, 3000);
-                };
-                
-                socket.onmessage = function(event) {
-                    processMessage(event.data);
-                };
-                
-                socket.onclose = function() {
-                    isConnected = false;
-                    isConnecting = false;
-                    updateStatus(MESSAGE[userSettings.language].disconnected);
-                    if (heartbeatInterval) {
-                        clearInterval(heartbeatInterval);
-                        heartbeatInterval = null;
-                    }
-                    // 显示断开连接提示
-                    showMessage(MESSAGE[userSettings.language].disconnected, 'warning');
-                    setTimeout(connectHTTP, 5000);
-                };
-                
-                socket.onerror = function(error) {
-                    isConnected = false;
-                    isConnecting = false;
-                    updateStatus(MESSAGE[userSettings.language].connectingFailed);
-                    if (heartbeatInterval) {
-                        clearInterval(heartbeatInterval);
-                        heartbeatInterval = null;
-                    }
-                    // 显示连接错误提示
-                    showMessage(MESSAGE[userSettings.language].connectingFailed, 'error');
-                    setTimeout(connectHTTP, 5000);
-                };
+                    })
+                    .catch(error => {
+                        console.error('[LunaHTTP] 连接HTTP API出错:', error);
+                        isConnected = false;
+                        isConnecting = false;
+                        updateStatus(MESSAGE[userSettings.language].connectingFailed);
+                        showMessage(MESSAGE[userSettings.language].connectingFailedLong, 'error');
+                        setTimeout(connectHTTP, 5000);
+                    });
             } catch (error) {
-                console.error('[LunaHTTP] 连接WebSocket出错');
+                console.error('[LunaHTTP] 连接HTTP API出错:', error);
                 isConnected = false;
                 isConnecting = false;
                 updateStatus(MESSAGE[userSettings.language].connectingFailed);
                 console.log('[LunaHTTP] 将在5秒后重试');
-                // 显示连接失败提示
                 showMessage(MESSAGE[userSettings.language].connectingFailedLong, 'error');
                 setTimeout(connectHTTP, 5000);
             }
@@ -1972,75 +1946,6 @@
             statusElement.appendChild(iframeSpan);
         }
 
-        // 发送消息到服务器
-        function sendMessage(message) {
-            if (socket && isConnected) {
-                // 如果传入的是字符串，则将其解析为JSON对象
-                let msgObj;
-                try {
-                    msgObj = typeof message === 'string' ? JSON.parse(message) : message;
-                } catch (e) {
-                    console.error('[LunaHTTP] 解析消息时出错:', e);
-                    return false;
-                }
-                
-                // 添加客户端ID和请求ID
-                msgObj.clientId = clientId;
-                msgObj.requestId = Date.now() + '_' + Math.floor(Math.random() * 1000000);
-                
-                // 将对象转换回字符串并发送
-                const finalMessage = JSON.stringify(msgObj);
-                socket.send(finalMessage);
-                console.log('[LunaHTTP] 已发送消息:', finalMessage);
-                return true;
-            } else {
-                console.log('[LunaHTTP] 未连接到服务器，尝试重新连接');
-                // 尝试重新连接，但仅在未连接且不在连接过程中时
-                if (!isConnected && !isConnecting) {
-                    connectHTTP();
-                }
-                return false;
-            }
-        }
-
-        // 处理接收到的消息
-        function processMessage(message) {
-            try {
-                const data = JSON.parse(message);
-                
-                // 检查消息是否属于当前客户端
-                // 如果消息包含clientId且与当前客户端不匹配，则忽略此消息
-                if (data.clientId && data.clientId !== clientId) {
-                    return;
-                }
-                
-                console.log('[LunaHTTP] 收到消息类型:', data.type);
-                
-                switch (data.type) {
-                    case 'segment_result':
-                        handleSegmentResult(data);
-                        break;
-                    case 'translation_result':
-                        handleTranslationResult(data);
-                        break;
-                    case 'dictionary_result':
-                        handleDictionaryResult(data);
-                        break;
-                    case 'read_result':
-                        handleReadResult(data);
-                        break;
-                    case 'heartbeat':
-                        // 心跳响应不需要处理
-                        break;
-                    default:
-                        console.log('[LunaHTTP] 未知消息类型:', data.type);
-                        break;
-                }
-            } catch (e) {
-                // 不是JSON，按原样传递给翻译处理函数
-                console.log('[LunaHTTP] Received non-JSON message:', message);
-            }
-        }
 
 
         /* ========== 按键事件 ========== */
@@ -2245,17 +2150,51 @@
             paragraph.innerHTML = `<em>${MESSAGE[userSettings.language].segmenting}</em>`;
 
             // 发送分词请求
-            if (!sendMessage(JSON.stringify({
-                type: 'segment',
-                text: originalText
-            }))) {
-                // 如果发送失败，恢复原始内容
-                paragraph.innerHTML = originalContent;
-                paragraph.classList.remove('lunaws-active-paragraph');
-                currentParagraph = null;
-                originalContent = null;
-                return;
-            }
+            const baseUrl = userSettings.apiUrl;
+            const url = `${baseUrl}/api/mecab?text=${encodeURIComponent(originalText)}`;
+            // 请补充
+            fetch(url)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP错误! 状态: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (!data || data.length === 0) {
+                        // 如果没有结果，恢复原始内容
+                        paragraph.innerHTML = originalContent;
+                        paragraph.classList.remove('lunaws-active-paragraph');
+                        currentParagraph = null;
+                        originalContent = null;
+                        return;
+                    }
+                    // 处理分词结果 - 构造与原来格式相同的对象
+                    const segments = data.map(item => {
+                        // 确保kana字段存在且有效，否则使用原词
+                        const kana = (item.kana && item.kana.trim()) ? item.kana : null;
+                        
+                        return {
+                            orig: item.word,
+                            hira: kana, // 使用kana作为假名注音
+                            kana: kana, // 保留kana字段以兼容
+                            word_class: item.wordclass || '',
+                            prototype: item.prototype || item.word,
+                            is_delimiter: item.isdeli || false
+                        };
+                    });
+                    
+                    handleSegmentResult({segments: segments});
+                })
+                .catch(error => {
+                    console.error('[LunaHTTP] 分词请求失败:', error);
+                    // 如果发送失败，恢复原始内容
+                    paragraph.innerHTML = originalContent;
+                    paragraph.classList.remove('lunaws-active-paragraph');
+                    currentParagraph = null;
+                    originalContent = null;
+                    return;
+                });
 
             // 自动触发翻译请求
             setTimeout(() => translateText(originalText), 300);
@@ -2341,6 +2280,12 @@
 
                     // 罗马字始终显示
                     if (/^[a-zA-Z]+$/.test(hiragana)) return false;
+                    
+                    // 如果原文中包含汉字，总是显示假名
+                    if (/[\u4E00-\u9FFF]/.test(original)) return false;
+                    
+                    // 如果原文和读音完全相同，不显示
+                    if (original === hiragana) return true;
 
                     function toHiragana(str) {
                         return str.replace(/[\u30A0-\u30FF]/g, char => {
@@ -2348,16 +2293,19 @@
                         });
                     }
 
+                    // 比较转换为平假名后的文本
                     return toHiragana(original) === toHiragana(hiragana);
                 }
                 
                 // 使用ruby标签显示振假名
-                if (segment.hira && segment.hira.trim() && !isSameSoundIgnoringKana(segment.orig, segment.hira)) {
+                // 首先检查hira字段，如果没有则使用kana字段
+                const reading = segment.hira || segment.kana;
+                if (reading && reading.trim() && !isSameSoundIgnoringKana(segment.orig, reading)) {
                     const rubyElement = document.createElement('ruby');
                     rubyElement.appendChild(document.createTextNode(segment.orig));
                     
                     // 确保使用平假名
-                    let hiragana = segment.hira;
+                    let hiragana = reading;
                     if (/[\u30A0-\u30FF]/.test(hiragana)) {
                         hiragana = hiragana.replace(/[\u30A0-\u30FF]/g, char => {
                             return String.fromCharCode(char.charCodeAt(0) - 96);
@@ -2660,17 +2608,28 @@
                 translationArea.innerHTML = `<div style="padding:10px;color:#666;text-align:center;">${MESSAGE[userSettings.language].translating}</div>`;
                 translationArea.style.display = 'block';
 
-                const sent = sendMessage(JSON.stringify({
-                    type: 'translate',
-                    text: text
-                }));
-
-                if (!sent) {
-                    console.error('[LunaHTTP] 翻译请求发送失败');
-                    translationArea.innerHTML = '<div style="padding:10px;color:red;text-align:center;">翻译请求发送失败</div>';
-                } else {
-                    console.log('[LunaHTTP] 翻译请求已发送');
-                }
+                // 发送翻译请求到HTTP API
+                const baseUrl = userSettings.apiUrl;
+                fetch(`${baseUrl}/api/translate?text=${encodeURIComponent(text)}`)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`HTTP错误! 状态: ${response.status}`);
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        const translationData = {
+                            type: 'translation_result',
+                            translator: data.name || '未知翻译器',
+                            content: data.result || '',
+                            source_text: text
+                        };
+                        handleTranslationResult(translationData);
+                    })
+                    .catch(error => {
+                        console.error('[LunaHTTP] 翻译请求出错:', error);
+                        translationArea.innerHTML = '<div style="padding:10px;color:red;text-align:center;">翻译请求失败</div>';
+                    });
             } catch (error) {
                 console.error('[LunaHTTP] 翻译过程中出错:', error);
             }
@@ -2862,11 +2821,47 @@
                         }
                     }
                     
-                    // 发送新的查词请求
-                    sendMessage(JSON.stringify({
-                        type: 'dictionary',
-                        word: newWord
-                    }));
+                    // 发送新的查词请求 - 使用HTTP API
+                    const baseUrl = userSettings.apiUrl;
+                    const url = `${baseUrl}/api/dictionary?word=${encodeURIComponent(newWord)}`;
+                    //请补充
+                    const loadingIndicator = iframeDoc.querySelector('.dict-loading');
+                    
+                    const eventSource = new EventSource(url);
+                    
+                    eventSource.onmessage = function(event) {
+                        try {
+                            const data = JSON.parse(event.data);
+                            
+                            const dictResult = {
+                                type: 'dictionary_result',
+                                dictionary: data.name || '未知词典',
+                                content: data.result || '',
+                                word: newWord
+                            };
+                            
+                            handleDictionaryResult(dictResult);
+                        } catch (e) {
+                            console.error('[LunaHTTP] 解析词典结果时出错:', e);
+                        }
+                    };
+                    
+                    eventSource.onerror = function() {
+                        console.error('[LunaHTTP] 词典API连接错误');
+                        if (loadingIndicator) {
+                            loadingIndicator.textContent = '词典查询失败';
+                        }
+                        eventSource.close();
+                    };
+                    
+                    // 设置超时，确保即使没有结果也会关闭连接
+                    setTimeout(() => {
+                        eventSource.close();
+                        if (loadingIndicator && loadingIndicator.style.display !== 'none') {
+                            loadingIndicator.textContent = '查询完成';
+                            loadingIndicator.style.display = 'none';
+                        }
+                    }, 10000);
                     
                     if (userSettings.autoReadWord) {
                         readText(newWord);
@@ -2949,12 +2944,43 @@
             };
             iframe.src = 'about:blank';
 
-            // 发送查词请求
-            sendMessage(JSON.stringify({
-                type: 'dictionary',
-                word: word
-            }));
-
+            // 发送查词请求 - 使用HTTP API
+            const baseUrl = userSettings.apiUrl;
+            const url = `${baseUrl}/api/dictionary?word=${encodeURIComponent(word)}`;
+            const eventSource = new EventSource(url);
+            
+            eventSource.onmessage = function(event) {
+                try {
+                    const data = JSON.parse(event.data);
+                    
+                    const dictResult = {
+                        type: 'dictionary_result',
+                        dictionary: data.name || '未知词典',
+                        content: data.result || '',
+                        word: word
+                    };
+                    
+                    handleDictionaryResult(dictResult);
+                } catch (e) {
+                    console.error('[LunaHTTP] 解析词典结果时出错:', e);
+                }
+            };
+            
+            eventSource.onerror = function() {
+                console.error('[LunaHTTP] 词典API连接错误');
+                const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+                const loadingIndicator = iframeDoc.querySelector('.dict-loading');
+                if (loadingIndicator) {
+                    loadingIndicator.textContent = '词典查询失败';
+                }
+                eventSource.close();
+            };
+            
+            // 设置超时，确保即使没有结果也会关闭连接
+            setTimeout(() => {
+                eventSource.close();
+            }, 10000);
+            
             // 如果启用了自动朗读单词，发送朗读请求
             if (userSettings.autoReadWord) {
                 readText(word);
@@ -3105,15 +3131,38 @@
                 return setTimeout(() => readText(text, element), 150);
             }
 
-            // 发送朗读请求
-            const success = sendMessage(JSON.stringify({
-                type: 'read',
-                text: text
-            }));
+            // 使用HTTP API发送朗读请求
+            const baseUrl = userSettings.apiUrl;
+            const url = `${baseUrl}/api/tts?text=${encodeURIComponent(text)}`;
+            let success = false;
+            
+            fetch(url)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP错误! 状态: ${response.status}`);
+                    }
+                    return response.blob();
+                })
+                .then(blob => {
+                    const audioUrl = URL.createObjectURL(blob);
+                    const audioData = {
+                        status: 'success',
+                        audio_data: audioUrl,
+                        is_blob_url: true
+                    };
+                    playAudio(audioData);
+                    success = true;
+                })
+                .catch(error => {
+                    console.error('[LunaHTTP] TTS请求失败:', error);
+                    success = false;
+                });
 
             // 添加视觉反馈
-            element.classList.add('lunaws-reaction');
-            setTimeout(() => { element.classList.remove('lunaws-reaction'); }, 500);
+            if (element) {
+                element.classList.add('lunaws-reaction');
+                setTimeout(() => { element.classList.remove('lunaws-reaction'); }, 500);
+            }
 
             return success;
         }

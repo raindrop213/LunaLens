@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Japanese Language API Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+        .section {
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            padding: 20px;
+        }
+        h2 {
+            margin-top: 0;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+        .input-group {
+            margin-bottom: 15px;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 8px;
+            margin-top: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .output {
+            margin-top: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 10px;
+            min-height: 50px;
+            background-color: #f9f9f9;
+        }
+        .word-item {
+            margin-bottom: 5px;
+            padding: 5px;
+            background-color: #f5f5f5;
+            border-radius: 3px;
+        }
+        .dictionary-result {
+            margin-bottom: 15px;
+            padding: 10px;
+            border: 1px solid #eee;
+            border-radius: 5px;
+        }
+        .audio-controls {
+            margin-top: 10px;
+        }
+        .loading {
+            color: #666;
+            font-style: italic;
+        }
+        .error {
+            color: red;
+        }
+    </style>
+</head>
+<body>
+    <h1>Japanese Language API Test</h1>
+    
+    <div class="container">
+        <!-- TTS Section -->
+        <div class="section">
+            <h2>Text-to-Speech (TTS)</h2>
+            <div class="input-group">
+                <label for="tts-text">Enter Japanese text:</label>
+                <input type="text" id="tts-text" value="「クレームでも来ましたか？」">
+            </div>
+            <button onclick="testTTS()">Generate Speech</button>
+            <div id="tts-output" class="output">
+                <div class="audio-controls"></div>
+            </div>
+        </div>
+        
+        <!-- Translation Section -->
+        <div class="section">
+            <h2>Translation</h2>
+            <div class="input-group">
+                <label for="translate-text">Enter text to translate:</label>
+                <input type="text" id="translate-text" value="「クレームでも来ましたか？」">
+            </div>
+            <button onclick="testTranslate()">Translate</button>
+            <div id="translate-output" class="output"></div>
+        </div>
+        
+        <!-- Dictionary Section -->
+        <div class="section">
+            <h2>Dictionary Search</h2>
+            <div class="input-group">
+                <label for="dictionary-word">Enter word to look up:</label>
+                <input type="text" id="dictionary-word" value="クレーム">
+            </div>
+            <button onclick="testDictionary()">Search</button>
+            <div id="dictionary-output" class="output"></div>
+        </div>
+        
+        <!-- Tokenization Section -->
+        <div class="section">
+            <h2>Word Tokenization (MeCab)</h2>
+            <div class="input-group">
+                <label for="mecab-text">Enter text for tokenization:</label>
+                <input type="text" id="mecab-text" value="「クレームでも来ましたか？」">
+            </div>
+            <button onclick="testMecab()">Analyze</button>
+            <div id="mecab-output" class="output"></div>
+        </div>
+    </div>
+
+    <script>
+        // Base URL for the API
+        const baseUrl = 'http://127.0.0.1:2333/api';
+        
+        // TTS API Test
+        async function testTTS() {
+            const text = document.getElementById('tts-text').value;
+            const outputDiv = document.getElementById('tts-output');
+            
+            if (!text) {
+                outputDiv.innerHTML = '<p class="error">Please enter some text</p>';
+                return;
+            }
+            
+            outputDiv.innerHTML = '<p class="loading">Loading audio...</p>';
+            
+            try {
+                const response = await fetch(`${baseUrl}/tts?text=${encodeURIComponent(text)}`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+                
+                const audioBlob = await response.blob();
+                const audioUrl = URL.createObjectURL(audioBlob);
+                
+                outputDiv.innerHTML = `
+                    <div class="audio-controls">
+                        <audio controls src="${audioUrl}"></audio>
+                        <p>Audio generated for: ${text}</p>
+                    </div>
+                `;
+            } catch (error) {
+                outputDiv.innerHTML = `<p class="error">Error: ${error.message}</p>`;
+            }
+        }
+        
+        // Translation API Test
+        async function testTranslate() {
+            const text = document.getElementById('translate-text').value;
+            const outputDiv = document.getElementById('translate-output');
+            
+            if (!text) {
+                outputDiv.innerHTML = '<p class="error">Please enter some text</p>';
+                return;
+            }
+            
+            outputDiv.innerHTML = '<p class="loading">Translating...</p>';
+            
+            try {
+                const response = await fetch(`${baseUrl}/translate?text=${encodeURIComponent(text)}`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                outputDiv.innerHTML = `
+                    <p><strong>Dictionary:</strong> ${data.name}</p>
+                    <p><strong>Translation:</strong> ${data.result}</p>
+                    <p><strong>ID:</strong> ${data.id}</p>
+                `;
+            } catch (error) {
+                outputDiv.innerHTML = `<p class="error">Error: ${error.message}</p>`;
+            }
+        }
+        
+        // Dictionary API Test
+        async function testDictionary() {
+            const word = document.getElementById('dictionary-word').value;
+            const outputDiv = document.getElementById('dictionary-output');
+            
+            if (!word) {
+                outputDiv.innerHTML = '<p class="error">Please enter a word</p>';
+                return;
+            }
+            
+            outputDiv.innerHTML = '<p class="loading">Searching dictionaries...</p>';
+            
+            try {
+                const response = await fetch(`${baseUrl}/dictionary?word=${encodeURIComponent(word)}`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+                
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                
+                outputDiv.innerHTML = '';
+                
+                // Process the event stream
+                while (true) {
+                    const { value, done } = await reader.read();
+                    
+                    if (done) break;
+                    
+                    const chunk = decoder.decode(value, { stream: true });
+                    const lines = chunk.split('\n');
+                    
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            const jsonStr = line.substring(6);
+                            try {
+                                const data = JSON.parse(jsonStr);
+                                const resultDiv = document.createElement('div');
+                                resultDiv.className = 'dictionary-result';
+                                resultDiv.innerHTML = `
+                                    <h3>${data.name}</h3>
+                                    <div>${data.result}</div>
+                                `;
+                                outputDiv.appendChild(resultDiv);
+                            } catch (e) {
+                                console.error('Failed to parse JSON:', e);
+                            }
+                        }
+                    }
+                }
+                
+                if (outputDiv.innerHTML === '') {
+                    outputDiv.innerHTML = '<p>No results found</p>';
+                }
+            } catch (error) {
+                outputDiv.innerHTML = `<p class="error">Error: ${error.message}</p>`;
+            }
+        }
+        
+        // MeCab API Test
+        async function testMecab() {
+            const text = document.getElementById('mecab-text').value;
+            const outputDiv = document.getElementById('mecab-output');
+            
+            if (!text) {
+                outputDiv.innerHTML = '<p class="error">Please enter some text</p>';
+                return;
+            }
+            
+            outputDiv.innerHTML = '<p class="loading">Analyzing text...</p>';
+            
+            try {
+                const response = await fetch(`${baseUrl}/mecab?text=${encodeURIComponent(text)}`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                let html = '<table border="1" style="width:100%; border-collapse: collapse;">';
+                html += '<tr><th>Word</th><th>Reading</th><th>Word Class</th><th>Prototype</th><th>Is Delimiter</th></tr>';
+                
+                data.forEach(item => {
+                    html += `<tr>
+                        <td>${item.word}</td>
+                        <td>${item.kana || '-'}</td>
+                        <td>${item.wordclass || '-'}</td>
+                        <td>${item.prototype || '-'}</td>
+                        <td>${item.isdeli ? 'Yes' : 'No'}</td>
+                    </tr>`;
+                });
+                
+                html += '</table>';
+                outputDiv.innerHTML = html;
+            } catch (error) {
+                outputDiv.innerHTML = `<p class="error">Error: ${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>

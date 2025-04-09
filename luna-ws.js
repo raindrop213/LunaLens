@@ -28,8 +28,6 @@
             scrollToParagraph: true,
             autoReadParagraph: false,
             autoReadWord: true,
-            offlineModeToggle: false,
-            copyToClipboard: false,
             MessageToggle: true,
             // 面板位置和状态设置 - 固定在右上角，默认折叠且自动收缩
             panelPosition: { top: '20px', right: '20px', left: 'auto', panelCollapsed: true, panelRetracted: true },
@@ -156,8 +154,6 @@
         // 文本翻译映射
         const PANEL_TEXT = {
             "en": {
-                lunaWsEnabled: "Connected",
-                lunaWsDisabled: "Disconnected",
                 collapse: "Collapse",
                 settings: "Set",
                 saveSettings: "Save",
@@ -185,9 +181,6 @@
                 autoReadSettings: "Read Settings:",
                 autoReadParagraph: "Auto read paragraph",
                 autoReadWord: "Auto read word",
-                offlineMode: "※Offline Mode (no URL)",
-                offlineModeToggle: "Offline Mode Toggle",
-                copyToClipboard: "Copy to Clipboard",
                 others: "Others",
                 MessageToggle: "Show Message",
                 settingsSaved: "Settings saved √",
@@ -212,8 +205,6 @@
                 
             },
             "zh": {
-                lunaWsEnabled: "已连接",
-                lunaWsDisabled: "未连接",
                 collapse: "收起",
                 settings: "设置",
                 saveSettings: "保存设置",
@@ -241,9 +232,6 @@
                 autoReadSettings: "朗读设置:",
                 autoReadParagraph: "自动朗读段落",
                 autoReadWord: "自动朗读单词",
-                offlineMode: "※离线模式设置（无 URL）",
-                offlineModeToggle: "离线模式开关",
-                copyToClipboard: "复制到剪贴板",
                 others: "其他:",
                 MessageToggle: "显示消息",
                 settingsSaved: "设置已保存√",
@@ -528,17 +516,6 @@
                             </div>
                         </div>
                         <div class="lunaws-settings-row">
-                            <label>${PANEL_TEXT[lang].offlineMode}</label>
-                            <div class="lunaws-toggle">
-                                <input type="checkbox" id="lunaws-offline-mode" ${userSettings.offlineModeToggle ? 'checked' : ''}>
-                                <label for="lunaws-offline-mode">${PANEL_TEXT[lang].offlineModeToggle}</label>
-                            </div>
-                            <div class="lunaws-toggle">
-                                <input type="checkbox" id="lunaws-copy-mode" ${userSettings.copyToClipboard ? 'checked' : ''}>
-                                <label for="lunaws-copy-mode">${PANEL_TEXT[lang].copyToClipboard}</label>
-                            </div>
-                        </div>
-                        <div class="lunaws-settings-row">
                             <label>${PANEL_TEXT[lang].others}</label>
                             <div class="lunaws-toggle">
                                 <input type="checkbox" id="lunaws-message-toggle" ${userSettings.MessageToggle ? 'checked' : ''}>
@@ -779,8 +756,6 @@
                     scrollToParagraph: document.getElementById('lunaws-scroll-to-paragraph').checked,
                     autoReadParagraph: document.getElementById('lunaws-auto-read-paragraph').checked,
                     autoReadWord: document.getElementById('lunaws-auto-read-word').checked,
-                    offlineModeToggle: document.getElementById('lunaws-offline-mode').checked,
-                    copyToClipboard: document.getElementById('lunaws-copy-mode').checked,
                     MessageToggle: document.getElementById('lunaws-message-toggle').checked,
 
                     sentenceDelimiters: document.getElementById('lunaws-sentence-delimiters').value,
@@ -1258,15 +1233,15 @@
             
             // 默认选项
             const defaults = {
-                matchWidth: false,       // 是否匹配目标元素宽度
-                matchHeight: false,      // 是否匹配目标元素高度
-                horizontalGap: 5,       // 水平间距
-                verticalGap: 5,         // 垂直间距
-                maxWidth: null,          // 最大宽度
-                maxHeight: null,         // 最大高度
-                priorityPosition: null,  // 优先位置，默认根据垂直偏好决定
-                forceHideForMeasure: false, // 是否强制隐藏来测量
-                applyPosition: true      // 是否直接应用位置（false则只返回计算结果）
+                matchWidth: false,
+                matchHeight: false,
+                horizontalGap: 5,
+                verticalGap: 5,
+                maxWidth: null,
+                maxHeight: null,
+                priorityPosition: null,
+                forceHideForMeasure: false,
+                applyPosition: true
             };
             
             // 合并选项
@@ -1506,9 +1481,9 @@
             
             // 设置宽高匹配
             if (userSettings.verticalPreference) {
-                options.matchHeight = true; // 垂直阅读模式匹配高度
+                options.matchHeight = true;
             } else {
-                options.matchWidth = true;  // 水平阅读模式匹配宽度
+                options.matchWidth = true;
             }
             
             // 使用通用定位函数
@@ -1575,9 +1550,6 @@
 
             // 添加鼠标悬停效果
             doc.addEventListener('mouseover', function(event) {
-                // 如果未连接到WebSocket，不添加高亮效果
-                if (!isConnected) return;
-            
                 // 确定当前鼠标悬停的元素是否是选择器匹配的段落
                 const target = event.target;
                 const matchingParagraph = findMatchingParagraph(target);
@@ -2185,16 +2157,8 @@
 
 
         /* ========== 段落处理 ========== */
-        // 处理选中的段落（Websocket模式 / 离线模式）
+        // 处理选中的段落
         function processSelectedParagraph(element) {
-            // 首先检查WebSocket连接状态
-            if (!isConnected && !userSettings.offlineModeToggle) {
-                showMessage(MESSAGE[userSettings.language].notConnectedOfflineDisabled, 'warning');
-                console.log('[LunaWS] 未连接到WebSocket且非离线模式，无法处理段落。正在尝试连接...');
-                // 没连接之前不处理段落，除非开启了离线模式
-                connectWebSocket();
-                return;
-            }
 
             // 通用的段落处理逻辑 - 对在线和离线模式都适用
             // 检查目标元素是否匹配段落选择器，或者是否在已处理的段落内
@@ -2260,15 +2224,7 @@
             currentParagraph = paragraph;
             originalContent = paragraph.innerHTML;
 
-            // 分支处理：根据是否为离线模式执行不同的处理逻辑
-            if (isConnected && !userSettings.offlineModeToggle) {
-                // 在线模式处理逻辑
-                processOnlineMode(paragraph, originalText);
-            } else if (userSettings.offlineModeToggle) {
-                // 离线模式处理逻辑
-                console.log('[LunaWS] 离线模式下处理段落:', paragraph);
-                processOfflineMode(paragraph, originalText);
-            }
+            processOnlineMode(paragraph, originalText);
 
             // 滚动到视图中（在线和离线模式共有的操作）
             const paragraphRect = paragraph.getBoundingClientRect();
@@ -2316,44 +2272,6 @@
             }
         }
 
-        // 离线模式的处理逻辑
-        function processOfflineMode(paragraph, originalText) {
-            // 在离线模式下激活段落时自动复制整个文本
-            if (userSettings.copyToClipboard) {
-                copyTextToClipboard(originalText, paragraph);
-            }
-
-            // 为离线模式处理分句
-            try {
-                // 离线分句
-                const sentencesContainer = offlineSplitTextIntoSentences(originalText);
-                
-                // 设置段落内容
-                paragraph.innerHTML = '';
-                paragraph.appendChild(sentencesContainer);
-                
-                // 为句子添加事件（主要是复制功能）
-                sentencesContainer.querySelectorAll('.lunaws-sentence').forEach(sentence => {
-                    // 添加左键点击复制功能
-                    if (userSettings.copyToClipboard) {
-                        sentence.addEventListener('click', (event) => {
-                            event.preventDefault();
-                            event.stopPropagation();
-                            
-                            const sentenceText = sentence.textContent.trim();
-                            if (sentenceText) {
-                                copyTextToClipboard(sentenceText, sentence);
-                            }
-                        });
-                    }
-                });
-                
-                console.log('[LunaWS] 离线模式下分句处理完成');
-            } catch (error) {
-                console.error('[LunaWS] 离线模式处理段落时出错:', error);
-                paragraph.innerHTML = '处理错误: ' + error.message;
-            }
-        }
 
         // 去除文本中的ruby标签振假名
         function removeRubyText(element) {
@@ -2694,76 +2612,6 @@
             setTimeout(() => { element.classList.remove('lunaws-copy'); }, 500);
         }
 
-        // 离线模式下的简单分句函数
-        function offlineSplitTextIntoSentences(text) {
-            try {
-                console.log('[LunaWS] 正在离线模式下进行分句处理');
-                
-                // 创建一个临时容器
-                const resultContainer = document.createElement('div');
-                
-                // 获取句子分隔符
-                const delimiterStr = userSettings.sentenceDelimiters || '。．.!?！？…';
-                const sentenceThreshold = parseInt(userSettings.sentenceThreshold) || 20;
-                
-                // 先将文本按照分隔符分割成粗略的句子
-                let rawSentences = [];
-                let currentSentence = '';
-                
-                for (let i = 0; i < text.length; i++) {
-                    const char = text[i];
-                    currentSentence += char;
-                    
-                    // 如果是分隔符或者是最后一个字符
-                    if (delimiterStr.includes(char) || i === text.length - 1) {
-                        if (currentSentence.trim().length > 0) {
-                            rawSentences.push(currentSentence);
-                            currentSentence = '';
-                        }
-                    }
-                }
-                
-                // 确保最后一个句子被添加
-                if (currentSentence.trim().length > 0) {
-                    rawSentences.push(currentSentence);
-                }
-                
-                // 处理句子长度，将过短的句子合并
-                let finalSentences = [];
-                let tempSentence = '';
-                
-                for (let i = 0; i < rawSentences.length; i++) {
-                    tempSentence += rawSentences[i];
-                    
-                    // 如果句子长度超过阈值或者是最后一个句子，则添加到最终结果
-                    if (tempSentence.length >= sentenceThreshold || i === rawSentences.length - 1) {
-                        finalSentences.push(tempSentence);
-                        tempSentence = '';
-                    }
-                }
-                
-                // 确保最后一个句子被添加
-                if (tempSentence.trim().length > 0) {
-                    finalSentences.push(tempSentence);
-                }
-                
-                // 创建句子元素并添加到结果容器
-                finalSentences.forEach(sentenceText => {
-                    const sentenceElement = document.createElement('span');
-                    sentenceElement.className = 'lunaws-sentence';
-                    sentenceElement.textContent = sentenceText;
-                    resultContainer.appendChild(sentenceElement);
-                });
-                
-                console.log('[LunaWS] 离线分句完成，句子数量:', finalSentences.length);
-                return resultContainer;
-            } catch (error) {
-                console.error('[LunaWS] 离线分句处理时出错:', error);
-                const errorContainer = document.createElement('div');
-                errorContainer.textContent = '分句处理错误: ' + error.message;
-                return errorContainer;
-            }
-        }
 
         /* ========== 翻译功能 ========== */
         // 翻译文本
