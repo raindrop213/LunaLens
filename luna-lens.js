@@ -213,8 +213,8 @@
                     border: 1px solid #ddd; border-bottom: 1px solid #fff;
                     margin-bottom: -1px; background-color: #f9f9f9;
                 }
-                .luna-tab-content { display: none; padding: 10px 0; }
-                .luna-tab-content.active { display: block; }
+                .luna-tab-content { display: none; padding: 10px 0; overflow-y: auto;}
+                .luna-tab-content.active { display: block; max-height: calc(80vh - 100px); overflow-y: auto;}
                 .luna-settings-saved {
                     position: fixed;
                     top: 50%;
@@ -1905,7 +1905,7 @@
             currentParagraph = paragraph;
             originalContent = paragraph.innerHTML;
 
-            processOnlineMode(paragraph, originalText);
+            processParagraph(paragraph, originalText);
 
             // 滚动到视图中（在线和离线模式共有的操作）
             const paragraphRect = paragraph.getBoundingClientRect();
@@ -1915,15 +1915,15 @@
         }
 
         // 在线模式的处理逻辑
-        function processOnlineMode(paragraph, originalText) {
+        function processParagraph(element, originalText) {
             // 添加段落点击事件
-            attachParagraphEvents(originalText, paragraph);
+            attachParagraphEvents(originalText, element);
 
             // 移除之前的翻译区域
             removeTranslationArea();
 
             // 显示加载提示
-            paragraph.innerHTML = `<em>${MESSAGE[userSettings.language].segmenting}</em>`;
+            element.innerHTML = `<em>${MESSAGE[userSettings.language].segmenting}</em>`;
 
             // 发送分词请求
             const baseUrl = userSettings.apiUrl;
@@ -1939,8 +1939,8 @@
                 .then(data => {
                     if (!data || data.length === 0) {
                         // 如果没有结果，恢复原始内容
-                        paragraph.innerHTML = originalContent;
-                        paragraph.classList.remove('luna-active-paragraph');
+                        element.innerHTML = originalContent;
+                        element.classList.remove('luna-active-paragraph');
                         currentParagraph = null;
                         originalContent = null;
                         return;
@@ -1965,8 +1965,8 @@
                 .catch(error => {
                     console.error('[LunaHTTP] 分词请求失败:', error);
                     // 如果发送失败，恢复原始内容
-                    paragraph.innerHTML = originalContent;
-                    paragraph.classList.remove('luna-active-paragraph');
+                    element.innerHTML = originalContent;
+                    element.classList.remove('luna-active-paragraph');
                     currentParagraph = null;
                     originalContent = null;
                     return;
@@ -1980,8 +1980,8 @@
                 // 确保有足够的延迟以防止快速切换段落时的音频冲突
                 setTimeout(() => {
                     // 再次检查当前段落是否仍然是正在处理的段落
-                    if (currentParagraph === paragraph) {
-                        readText(originalText, paragraph);
+                    if (currentParagraph === element) {
+                        readText(originalText, element);
                     }
                 }, 500);
             }
