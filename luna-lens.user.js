@@ -2540,6 +2540,65 @@
         }
 
         /* ========== 查词功能 ========== */
+        // 发送查词请求并处理结果
+        function sendDictionaryRequest(word, callback) {
+            const baseUrl = userSettings.apiUrl;
+            const url = `${baseUrl}/api/dictionary?word=${encodeURIComponent(word)}`;
+            
+            // 添加一个标志来跟踪是否收到过消息
+            let hasReceivedMessage = false;
+            let eventSource = new EventSource(url);
+            
+            eventSource.onmessage = function(event) {
+                hasReceivedMessage = true;
+                try {
+                    const data = JSON.parse(event.data);
+                    
+                    const dictResult = {
+                        type: 'dictionary_result',
+                        dictionary: data.name || '未知词典',
+                        content: data.result || '',
+                        word: word
+                    };
+                    
+                    if (callback && typeof callback === 'function') {
+                        callback(dictResult, null);
+                    }
+                } catch (e) {
+                    console.error('[LunaLens] 解析词典结果时出错:', e);
+                    if (callback && typeof callback === 'function') {
+                        callback(null, e);
+                    }
+                }
+            };
+            
+            eventSource.onerror = function() {
+                // 只有在没有收到任何消息的情况下才显示错误
+                if (!hasReceivedMessage) {
+                    console.error('[LunaLens] 词典API连接错误');
+                    if (callback && typeof callback === 'function') {
+                        callback(null, new Error('词典API连接错误'));
+                    }
+                }
+                eventSource.close();
+            };
+            
+            // 设置超时，确保即使没有结果也会关闭连接
+            setTimeout(() => {
+                eventSource.close();
+            }, 10000);
+            
+            // 返回一个用于清理的函数
+            return {
+                cancel: function() {
+                    if (eventSource) {
+                        eventSource.close();
+                        eventSource = null;
+                    }
+                }
+            };
+        }
+
         // 查询单词
         function queryWord(wordElement, word) {
             // 更新当前查询词信息
@@ -2597,47 +2656,27 @@
                         }
                     }
                     
-                    // 发送新的查词请求 - 使用HTTP API
-                    const baseUrl = userSettings.apiUrl;
-                    const url = `${baseUrl}/api/dictionary?word=${encodeURIComponent(newWord)}`;
-                    //请补充
-                    const loadingIndicator = iframeDoc.querySelector('.dict-loading');
-                    
-                    const eventSource = new EventSource(url);
-                    
-                    eventSource.onmessage = function(event) {
-                        try {
-                            const data = JSON.parse(event.data);
-                            
-                            const dictResult = {
-                                type: 'dictionary_result',
-                                dictionary: data.name || '未知词典',
-                                content: data.result || '',
-                                word: newWord
-                            };
-                            
-                            handleDictionaryResult(dictResult);
-                        } catch (e) {
-                            console.error('[LunaLens] 解析词典结果时出错:', e);
+                    // 发送新的查词请求
+                    sendDictionaryRequest(newWord, function(result, error) {
+                        const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+                        const loadingIndicator = iframeDoc.querySelector('.dict-loading');
+                        
+                        if (error) {
+                            if (loadingIndicator) {
+                                loadingIndicator.textContent = '词典查询失败';
+                            }
+                            return;
                         }
-                    };
-                    
-                    eventSource.onerror = function() {
-                        console.error('[LunaLens] 词典API连接错误');
-                        if (loadingIndicator) {
-                            loadingIndicator.textContent = '词典查询失败';
+                        
+                        if (result) {
+                            handleDictionaryResult(result);
                         }
-                        eventSource.close();
-                    };
-                    
-                    // 设置超时，确保即使没有结果也会关闭连接
-                    setTimeout(() => {
-                        eventSource.close();
+                        
                         if (loadingIndicator && loadingIndicator.style.display !== 'none') {
                             loadingIndicator.textContent = '查询完成';
                             loadingIndicator.style.display = 'none';
                         }
-                    }, 10000);
+                    });
                     
                     if (userSettings.autoReadWord) {
                         readText(newWord);
@@ -2720,42 +2759,24 @@
             };
             iframe.src = 'about:blank';
 
-            // 发送查词请求 - 使用HTTP API
-            const baseUrl = userSettings.apiUrl;
-            const url = `${baseUrl}/api/dictionary?word=${encodeURIComponent(word)}`;
-            const eventSource = new EventSource(url);
-            
-            eventSource.onmessage = function(event) {
-                try {
-                    const data = JSON.parse(event.data);
+            // 发送初始查词请求
+            sendDictionaryRequest(word, function(result, error) {
+                if (iframe.contentDocument) {
+                    const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+                    const loadingIndicator = iframeDoc.querySelector('.dict-loading');
                     
-                    const dictResult = {
-                        type: 'dictionary_result',
-                        dictionary: data.name || '未知词典',
-                        content: data.result || '',
-                        word: word
-                    };
+                    if (error) {
+                        if (loadingIndicator) {
+                            loadingIndicator.textContent = '词典查询失败';
+                        }
+                        return;
+                    }
                     
-                    handleDictionaryResult(dictResult);
-                } catch (e) {
-                    console.error('[LunaLens] 解析词典结果时出错:', e);
+                    if (result) {
+                        handleDictionaryResult(result);
+                    }
                 }
-            };
-            
-            eventSource.onerror = function() {
-                console.error('[LunaLens] 词典API连接错误');
-                const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-                const loadingIndicator = iframeDoc.querySelector('.dict-loading');
-                if (loadingIndicator) {
-                    loadingIndicator.textContent = '词典查询失败';
-                }
-                eventSource.close();
-            };
-            
-            // 设置超时，确保即使没有结果也会关闭连接
-            setTimeout(() => {
-                eventSource.close();
-            }, 10000);
+            });
             
             // 如果启用了自动朗读单词，发送朗读请求
             if (userSettings.autoReadWord) {
