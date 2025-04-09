@@ -1,25 +1,26 @@
-# Luna-WS
+# 🌙 LunaLens
 
-Luna-WS是一个油猴脚本，通过WebSocket连接LunaTranslator实现浏览器上的原文分词、翻译和查词功能。
+LunaLens是一个专为小说阅读设计的油猴脚本，通过连接LunaTranslator的HTTP API，在浏览器中实现文本分词、翻译、朗读和词汇查询功能，让您畅享无障碍的阅读体验。
 
-## 功能特点
-- 🔍 **分词功能**：对日文文本进行分词处理，便于学习
-- 📚 **词典查询**：点击单词查看详细词典解释
-- 🌐 **翻译功能**：对选中段落进行实时翻译
-- 🔊 **朗读功能**：支持文本朗读，辅助语言学习
+## ✨ 核心功能
+- 🔍 **分词注音**：Mecab分词，加注音
+- 📚 **即时词典**：点击单词查询词典
+- 🌐 **段落翻译**：选中段落一键获取翻译
+- 🔊 **语音朗读**：朗读句子或段落，支持自动朗读
+- 🧹 **字段筛选**：可自定义选择的HTML标签
 
-## 安装方法
+## 📥 安装指南
 
-1. 确保已安装油猴扩展（Tampermonkey）
+1. 安装油猴扩展（Tampermonkey）
    - [Chrome版](https://chrome.google.com/webstore/detail/tampermonkey/dhdgffkkebhmkfjojejmpbldmpobfkfo)
    - [Firefox版](https://addons.mozilla.org/en-US/firefox/addon/tampermonkey/)
    - [Edge版](https://microsoftedge.microsoft.com/addons/detail/tampermonkey/iikmkjmpaadaobahmlepeloendndfphd)
 
-2. 安装Luna-WS脚本
-   - 方法1：[点击此处安装](https://raw.githubusercontent.com/raindrop213/luna-ws/main/luna-ws.js)
+2. 安装LunaLens脚本
+   - 方法1：[点击此处安装](https://raw.githubusercontent.com/raindrop213/LunaLens/main/luna-lens.js)
    - 方法2：访问油猴插件管理面板->添加新脚本->粘贴本仓库中的代码
 
-3. 安装并配置LunaTranslator
+3. 配置LunaTranslator
    - [下载LunaTranslator](https://github.com/HIllya51/LunaTranslator)
-   - 配置WebSocket服务（默认端口6619）
+   - 启用HTTP网络服务（默认端口2333）
 

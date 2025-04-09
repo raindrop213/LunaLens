@@ -1,12 +1,12 @@
 // ==UserScript==
-// @name         Luna-HTTP
+// @name         LunaLens
 // @namespace    http://tampermonkey.net/
 // @version      0.1.0
 // @description  通过HTTP API连接LunaTranslator实现浏览器上的原文的分词、翻译和查词功能 
 // @author       Raindrop213
 // @match        *://**/*
-// @updateURL    https://raw.githubusercontent.com/raindrop213/Luna-HTTP/main/luna-http.js
-// @downloadURL  https://raw.githubusercontent.com/raindrop213/Luna-HTTP/main/luna-http.js
+// @updateURL    https://raw.githubusercontent.com/raindrop213/LunaLens/main/luna-lens.js
+// @downloadURL  https://raw.githubusercontent.com/raindrop213/LunaLens/main/luna-lens.js
 // @grant        none
 // @run-at       document-end
 // ==/UserScript==
@@ -15,142 +15,10 @@
     'use strict';
 
     /* 打包脚本 方便后面注入到Iframe */
-    const getLunaWSCode = function() {
+    const getLunaLensCode = function() {
         return function initFunction() {
 
         /* ========== 控制面板（面板只在主页面中创建） ========== */
-        // 默认用户设置
-        const LUNA_DEFAULT_SETTINGS = {
-            language: 'zh', // 默认使用中文
-            apiUrl: 'http://127.0.0.1:2333',
-            floatingTranslation: true,
-            verticalPreference: false,
-            scrollToParagraph: true,
-            autoReadParagraph: false,
-            autoReadWord: true,
-            MessageToggle: true,
-            // 面板位置和状态设置 - 固定在右上角，默认折叠且自动收缩
-            panelPosition: { top: '20px', right: '20px', left: 'auto', panelCollapsed: true, panelRetracted: true },
-
-            sentenceDelimiters: '。．.!?！？…',
-            sentenceThreshold: 20,
-            minContentLength: 2,
-            maxContentLength: 1000,
-            removeRuby: true,
-
-            keyBindings: {
-                nextParagraph: 'ArrowDown, 1',
-                prevParagraph: 'ArrowUp, 2',
-                autoPlayMode: 'P, 0',
-                closeActive: 'Escape'
-            },
-
-            includeSelectors: 'p, h1, h2, h3, h4, h5, h6',
-            excludeSelectors: '',
-            includeClassIds: '',
-            excludeClassIds: '',
-            stopContainers: 'article, main, section, div.content, div.main-content'
-        };
-
-        // 定义设置验证函数 - 确保关键属性存在且类型正确
-        function validateUserSettings(settings) {
-            if (!settings || typeof settings !== 'object') {
-                console.error('[LunaHTTP] 设置格式无效，使用默认设置');
-                return JSON.parse(JSON.stringify(LUNA_DEFAULT_SETTINGS));
-            }
-            
-            // 创建验证后的设置对象
-            const validatedSettings = {};
-            
-            // 先复制默认设置
-            const defaults = JSON.parse(JSON.stringify(LUNA_DEFAULT_SETTINGS));
-            
-            // 验证所有基本属性，确保类型正确
-            for (const key in defaults) {
-                if (key === 'keyBindings') continue; // 键绑定单独处理
-                if (key === 'panelPosition') continue; // 面板位置单独处理
-                
-                // 特殊处理语言设置
-                if (key === 'language') {
-                    // 验证language必须为'zh'或'en'
-                    validatedSettings[key] = (settings[key] === 'zh' || settings[key] === 'en') 
-                        ? settings[key] 
-                        : defaults[key];
-                    
-                    if (settings[key] && validatedSettings[key] !== settings[key]) {
-                        console.warn(`[LunaHTTP] 语言设置无效: "${settings[key]}"，使用默认值: "${defaults[key]}"`);
-                    }
-                    continue;
-                }
-                
-                // 验证面板折叠和收缩状态
-                if (key === 'panelCollapsed' || key === 'panelRetracted') {
-                    validatedSettings[key] = settings.hasOwnProperty(key) ? !!settings[key] : defaults[key];
-                    continue;
-                }
-                
-                // 验证其他属性的类型
-                const expectedType = typeof defaults[key];
-                const actualType = typeof settings[key];
-                
-                // 如果属性存在且类型符合预期，使用存储值，否则使用默认值
-                if (settings.hasOwnProperty(key) && actualType === expectedType) {
-                    validatedSettings[key] = settings[key];
-                } else {
-                    validatedSettings[key] = defaults[key];
-                    
-                    if (settings.hasOwnProperty(key)) {
-                        console.warn(`[LunaHTTP] 设置"${key}"类型不匹配 (期望${expectedType}，实际${actualType})，使用默认值`);
-                    }
-                }
-            }
-            
-            // 处理面板位置属性
-            if (settings.panelPosition && typeof settings.panelPosition === 'object') {
-                validatedSettings.panelPosition = {
-                    top: settings.panelPosition.top || defaults.panelPosition.top,
-                    left: settings.panelPosition.left || defaults.panelPosition.left,
-                    right: settings.panelPosition.right || defaults.panelPosition.right
-                };
-            } else {
-                validatedSettings.panelPosition = defaults.panelPosition;
-            }
-            
-            // 处理键绑定
-            validatedSettings.keyBindings = {}; 
-            const defaultBindings = defaults.keyBindings;
-            const userBindings = settings.keyBindings || {};
-            
-            for (const bindingKey in defaultBindings) {
-                if (userBindings.hasOwnProperty(bindingKey) && typeof userBindings[bindingKey] === 'string') {
-                    // 保留原始结构但标准化大小写（将空格处理为'Space'）
-                    validatedSettings.keyBindings[bindingKey] = userBindings[bindingKey]
-                        .split(',')
-                        .map(key => {
-                            // 处理空格键的特殊情况
-                            const trimmed = key.trim();
-                            if (trimmed.toLowerCase() === 'space') return 'Space';
-                            // 其他按键保持不变，大小写的处理由matchUserKey函数负责
-                            return trimmed;
-                        })
-                        .join(', ');
-                } else {
-                    validatedSettings.keyBindings[bindingKey] = defaultBindings[bindingKey];
-                }
-            }
-            
-            return validatedSettings;
-        }
-
-        // 声明全局变量
-        let userSettings = {};
-
-        // 用于跟踪iframe和主页连接状态的对象
-        const connectionTracker = {
-            main: { isConnected: false },
-            iframes: {}
-        };
-        
         // 文本翻译映射
         const PANEL_TEXT = {
             "en": {
@@ -163,7 +31,7 @@
                 shortcuts: "Shortcuts",
                 advanced: "Advanced",
                 language: "Interface Language:",
-                serverUrl: "WebSocket URL:",
+                serverUrl: "Server URL:",
                 WindowStyle: "Window Style:",
                 useFloatingWindow: "Use floating translation window",
                 verticalPreference: "Vertical Writing Mode",
@@ -213,7 +81,7 @@
                 handle: "处理",
                 shortcuts: "快捷键",
                 advanced: "高级",
-                serverUrl: "WebSocket URL:",
+                serverUrl: "服务器:",
                 language: "界面语言:",
                 WindowStyle: "窗口样式:",
                 useFloatingWindow: "使用浮动翻译窗口",
@@ -255,46 +123,6 @@
                 selectorHelp: "注意class和id的写法<br><kbd>class</kbd> 前加 <kbd>.</kbd><br><kbd>id</kbd> 前加 <kbd>#</kbd><br>用逗号分隔<br>※ 如果你看不懂请在第一栏加多个加上 <kbd>div</kbd> 提高选中率",
             }
         };
-
-        // 立即初始化用户设置
-        initializeUserSettings();
-        function initializeUserSettings() {
-            try {
-                // 先设置默认值
-                userSettings = JSON.parse(JSON.stringify(LUNA_DEFAULT_SETTINGS));
-                
-                // 尝试读取存储的设置
-                const savedSettings = localStorage.getItem('luna-settings');
-                if (savedSettings) {
-                    try {
-                        // 解析并验证设置
-                        const parsedSettings = JSON.parse(savedSettings);
-                        // 保留固定位置设置，不从localStorage读取
-                        const panelPosition = JSON.parse(JSON.stringify(LUNA_DEFAULT_SETTINGS.panelPosition));
-                        
-                        // 先验证设置
-                        userSettings = validateUserSettings(parsedSettings);
-                        
-                        // 强制覆盖位置设置
-                        userSettings.panelPosition = panelPosition;
-                        
-                        console.log('[LunaHTTP] 已加载并验证设置:', userSettings);
-                        
-                        // 特别检查verticalPreference设置
-                        console.log(`[LunaHTTP] 垂直偏好设置加载状态: ${userSettings.verticalPreference}`);
-                    } catch (e) {
-                        console.error('[LunaHTTP] 解析保存的设置失败:', e);
-                        // 保持默认设置
-                    }
-                } else {
-                    console.log('[LunaHTTP] 未找到保存的设置，使用默认设置');
-                }
-            } catch (e) {
-                console.error('初始化用户设置时出错:', e);
-                // 确保即使出错也使用默认设置
-                userSettings = JSON.parse(JSON.stringify(LUNA_DEFAULT_SETTINGS));
-            }
-        }
 
         // 控制面板内容设计
         function createControlPanel() {
@@ -431,7 +259,7 @@
             console.log('[LunaHTTP] 创建控制面板，当前语言:', lang, 'userSettings:', userSettings);
             panel.innerHTML = `
                 <div class="luna-header">
-                    <div class="luna-title">LunaWS</div>
+                    <div class="luna-title">LunaLens</div>
                     <div class="luna-expand-button" id="luna-toggle-panel">${PANEL_TEXT[lang].settings}</div>
                 </div>
 
@@ -909,13 +737,140 @@
 
 
         /* ========== 基本功能变量 ========== */
+
+        // 默认用户设置
+        const LUNA_DEFAULT_SETTINGS = {
+            language: 'zh', // 默认使用中文
+            apiUrl: 'http://127.0.0.1:2333',
+            floatingTranslation: true,
+            verticalPreference: false,
+            scrollToParagraph: true,
+            autoReadParagraph: false,
+            autoReadWord: true,
+            MessageToggle: true,
+            // 面板位置和状态设置 - 固定在右上角，默认折叠且自动收缩
+            panelPosition: { top: '20px', right: '20px', left: 'auto', panelCollapsed: true, panelRetracted: true },
+
+            sentenceDelimiters: '。．.!?！？…',
+            sentenceThreshold: 20,
+            minContentLength: 2,
+            maxContentLength: 1000,
+            removeRuby: true,
+
+            keyBindings: {
+                nextParagraph: 'ArrowDown, 1',
+                prevParagraph: 'ArrowUp, 2',
+                autoPlayMode: 'P, 0',
+                closeActive: 'Escape'
+            },
+
+            includeSelectors: 'p, h1, h2, h3, h4, h5, h6',
+            excludeSelectors: '',
+            includeClassIds: '',
+            excludeClassIds: '',
+            stopContainers: 'article, main, section, div.content, div.main-content'
+        };
+
+        // 声明全局变量
+        let userSettings = {};
+
+        // 定义设置验证函数 - 确保关键属性存在且类型正确
+        function validateUserSettings(settings) {
+            if (!settings || typeof settings !== 'object') {
+                console.error('[LunaHTTP] 设置格式无效，使用默认设置');
+                return JSON.parse(JSON.stringify(LUNA_DEFAULT_SETTINGS));
+            }
+            
+            // 创建验证后的设置对象
+            const validatedSettings = {};
+            
+            // 先复制默认设置
+            const defaults = JSON.parse(JSON.stringify(LUNA_DEFAULT_SETTINGS));
+            
+            // 验证所有基本属性，确保类型正确
+            for (const key in defaults) {
+                if (key === 'keyBindings') continue; // 键绑定单独处理
+                if (key === 'panelPosition') continue; // 面板位置单独处理
+                
+                // 特殊处理语言设置
+                if (key === 'language') {
+                    // 验证language必须为'zh'或'en'
+                    validatedSettings[key] = (settings[key] === 'zh' || settings[key] === 'en') 
+                        ? settings[key] 
+                        : defaults[key];
+                    
+                    if (settings[key] && validatedSettings[key] !== settings[key]) {
+                        console.warn(`[LunaHTTP] 语言设置无效: "${settings[key]}"，使用默认值: "${defaults[key]}"`);
+                    }
+                    continue;
+                }
+                
+                // 验证面板折叠和收缩状态
+                if (key === 'panelCollapsed' || key === 'panelRetracted') {
+                    validatedSettings[key] = settings.hasOwnProperty(key) ? !!settings[key] : defaults[key];
+                    continue;
+                }
+                
+                // 验证其他属性的类型
+                const expectedType = typeof defaults[key];
+                const actualType = typeof settings[key];
+                
+                // 如果属性存在且类型符合预期，使用存储值，否则使用默认值
+                if (settings.hasOwnProperty(key) && actualType === expectedType) {
+                    validatedSettings[key] = settings[key];
+                } else {
+                    validatedSettings[key] = defaults[key];
+                    
+                    if (settings.hasOwnProperty(key)) {
+                        console.warn(`[LunaHTTP] 设置"${key}"类型不匹配 (期望${expectedType}，实际${actualType})，使用默认值`);
+                    }
+                }
+            }
+            
+            // 处理面板位置属性
+            if (settings.panelPosition && typeof settings.panelPosition === 'object') {
+                validatedSettings.panelPosition = {
+                    top: settings.panelPosition.top || defaults.panelPosition.top,
+                    left: settings.panelPosition.left || defaults.panelPosition.left,
+                    right: settings.panelPosition.right || defaults.panelPosition.right
+                };
+            } else {
+                validatedSettings.panelPosition = defaults.panelPosition;
+            }
+            
+            // 处理键绑定
+            validatedSettings.keyBindings = {}; 
+            const defaultBindings = defaults.keyBindings;
+            const userBindings = settings.keyBindings || {};
+            
+            for (const bindingKey in defaultBindings) {
+                if (userBindings.hasOwnProperty(bindingKey) && typeof userBindings[bindingKey] === 'string') {
+                    // 保留原始结构但标准化大小写（将空格处理为'Space'）
+                    validatedSettings.keyBindings[bindingKey] = userBindings[bindingKey]
+                        .split(',')
+                        .map(key => {
+                            // 处理空格键的特殊情况
+                            const trimmed = key.trim();
+                            if (trimmed.toLowerCase() === 'space') return 'Space';
+                            // 其他按键保持不变，大小写的处理由matchUserKey函数负责
+                            return trimmed;
+                        })
+                        .join(', ');
+                } else {
+                    validatedSettings.keyBindings[bindingKey] = defaultBindings[bindingKey];
+                }
+            }
+            
+            return validatedSettings;
+        }
+
         const STYLES = `
             /* 段落和单词样式 */
             .luna-active-paragraph {
                 padding: 8px; border-radius: 4px;
                 transition: all 0.2s ease-in-out;
                 position: relative; z-index: 5; background-color: white;
-                box-shadow: 1px 2px 4px 0px rgba(122, 122, 122, 0.2);
+                box-shadow: 1px 2px 4px 2px rgba(122, 122, 122, 0.2);
             }
             .luna-highlighted {
                 border-radius: 4px;
@@ -1011,12 +966,12 @@
                 margin-top: 0; padding: 10px; background-color: white;
                 border-radius: 4px; position: absolute; max-width: 100%;
                 transition: all 0.3s ease; animation: fadeIn 0.3s ease-in-out;
-                box-sizing: border-box; box-shadow: 1px 2px 4px 0px rgba(122, 122, 122, 0.2);
+                box-sizing: border-box; box-shadow: 1px 2px 4px 2px rgba(122, 122, 122, 0.2);
             }
-            .luna-vertical-translation-area { border-top: 2px solid #9c27b0; }
-            .luna-vertical-active-paragraph { border-top: 2px solid #3498db; }
-            .luna-horizontal-translation-area { border-left: 2px solid #9c27b0; }
-            .luna-horizontal-active-paragraph { border-left: 2px solid #3498db; }
+            .luna-vertical-translation-area { border-top: 2px solid #9c27b0 !important; }
+            .luna-vertical-active-paragraph { border-top: 2px solid #3498db !important; }
+            .luna-horizontal-translation-area { border-left: 2px solid #9c27b0 !important; }
+            .luna-horizontal-active-paragraph { border-left: 2px solid #3498db !important; }
             @keyframes fadeIn {
                 from { opacity: 0; transform: translateY(-10px); }
                 to { opacity: 1; transform: translateY(0); }
@@ -1029,9 +984,6 @@
             .luna-word rt { text-align: center; font-size: 10px; color: #c33c32; }
         `;
 
-        let socket = null;
-        let isConnected = false;
-        let isConnecting = false;
         let currentParagraph = null;
         let originalContent = null;
         let selectedWords = [];
@@ -1040,9 +992,6 @@
         let currentWord = '';
         let currentHighlightedSentence = null;
         let isAutoPlayMode = false; // 添加自动播放模式变量
-        let heartbeatInterval;
-        // 添加一个唯一的客户端ID
-        const clientId = 'client_' + Date.now() + '_' + Math.floor(Math.random() * 1000000);
 
         // 使用共享的默认设置常量
         const defaultUserSettings = LUNA_DEFAULT_SETTINGS;
@@ -1094,8 +1043,6 @@
         /* ========== 初始化函数 ========== */
         function init() {
             try {
-                console.log('[LunaHTTP] 初始化 Luna-WS...');
-
                 // 从存储中恢复用户设置
                 loadUserSettings();
 
@@ -1119,24 +1066,7 @@
                 
                 // 使用选择器管理器初始化段落点击处理
                 addParagraphClickHandlers(document);
-                
 
-                // 添加iframe状态消息监听
-                window.addEventListener('message', function(event) {
-                    // 验证消息来源
-                    if (event.data && event.data.type === 'luna-iframe-status') {
-                        // 更新iframe状态追踪
-                        const { iframeId, isConnected } = event.data;
-                        if (iframeId && window.top === window) { // 只在主页面处理
-                            connectionTracker.iframes[iframeId] = {
-                                isConnected: isConnected,
-                                lastUpdate: Date.now()
-                            };
-                        }
-                    }
-                });
-
-                
                 console.log('[LunaHTTP] 初始化完成');
             } catch (err) {
                 console.error('[LunaHTTP] 初始化失败:', err);
@@ -1147,7 +1077,7 @@
         function loadUserSettings() {
             try {
                 // 先设置默认值
-                userSettings = JSON.parse(JSON.stringify(defaultUserSettings));
+                userSettings = JSON.parse(JSON.stringify(LUNA_DEFAULT_SETTINGS));
                 
                 // 尝试读取存储的设置
                 const savedSettings = localStorage.getItem('luna-settings');
@@ -1825,6 +1755,87 @@
             }
         }
 
+        // 通用消息提示函数
+        function showMessage(message, type = 'info', duration = 1500) {
+            if (!userSettings.MessageToggle) return;
+            // 确保样式表已添加
+            if (!document.querySelector('#luna-message-styles')) {
+                const styleSheet = document.createElement('style');
+                styleSheet.id = 'luna-message-styles';
+                styleSheet.textContent = `
+                    .luna-message-container {
+                        position: fixed; top: 20px; left: 20px;
+                        max-width: 300px; z-index: 10000; 
+                    }
+                    .luna-status-message {
+                        color: white; padding: 8px; border-radius: 8px; font-size: .8em;
+                        margin-bottom: 8px; box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+                        display: flex; align-items: center; opacity: 0; transform: translateX(50px);
+                        transition: opacity 0.3s, transform 0.3s; cursor: default;
+                    }
+                    .luna-message-icon { margin-right: 10px; font-size: .8em; }
+                    .luna-message-content { flex: 1; font-weight: 400; }
+                    .luna-status-message[data-type="info"] { background-color: rgba(33, 150, 243, 0.7); }
+                    .luna-status-message[data-type="success"] { background-color: rgba(76, 175, 80, 0.7); }
+                    .luna-status-message[data-type="warning"] { background-color: rgba(255, 152, 0, 0.7); }
+                    .luna-status-message[data-type="error"] { background-color: rgba(244, 67, 54, 0.7); }
+                `;
+                document.head.appendChild(styleSheet);
+            }
+            
+            // 创建或获取消息容器
+            let messageContainer = document.querySelector('.luna-message-container');
+            if (!messageContainer) {
+                messageContainer = document.createElement('div');
+                messageContainer.className = 'luna-message-container';
+                document.body.appendChild(messageContainer);
+            }
+            
+            // 创建新的消息元素
+            const statusDiv = document.createElement('div');
+            statusDiv.className = 'luna-status-message';
+            statusDiv.dataset.type = type;
+            
+            // 设置图标
+            let icon = '💬';
+            if (type === 'success') { icon = '✅';
+            } else if (type === 'warning') { icon = '⚠️';
+            } else if (type === 'error') { icon = '❌'; }
+            
+            // 创建消息内容结构
+            statusDiv.innerHTML = `
+                <div class="luna-message-icon">${icon}</div>
+                <div class="luna-message-content">${message}</div>
+            `;
+            
+            // 添加到容器
+            messageContainer.appendChild(statusDiv);
+            
+            // 触发动画显示
+            setTimeout(() => {
+                statusDiv.style.opacity = '1';
+                statusDiv.style.transform = 'translateX(0)';
+            }, 10);
+            
+            // 自动移除状态提示
+            setTimeout(() => {
+                // 淡出动画
+                statusDiv.style.opacity = '0';
+                statusDiv.style.transform = 'translateX(50px)';
+                
+                // 移除元素
+                setTimeout(() => {
+                    if (messageContainer.contains(statusDiv)) {
+                        messageContainer.removeChild(statusDiv);
+                        
+                        // 如果容器为空，也移除容器
+                        if (messageContainer.children.length === 0) {
+                            document.body.removeChild(messageContainer);
+                        }
+                    }
+                }, 300);
+            }, duration);
+        }
 
         /* ========== 段落处理 ========== */
         // 处理选中的段落
@@ -2260,11 +2271,11 @@
         // 为段落添加中键事件
         function attachParagraphEvents(text, element) {
             // 先移除可能存在的事件监听器
-            element.removeEventListener('mousedown', element._lunawsMousedownHandler);
-            element.removeEventListener('mouseup', element._lunawsMouseupHandler);
+            element.removeEventListener('mousedown', element._lunaMousedownHandler);
+            element.removeEventListener('mouseup', element._lunaMouseupHandler);
 
             // 添加中键点击事件
-            element._lunawsMousedownHandler = (event) => {
+            element._lunaMousedownHandler = (event) => {
                 if (event.button === 1) {
                     // 阻止默认的中键行为
                     event.preventDefault();
@@ -2276,7 +2287,7 @@
                     }
                 }
             };
-            element._lunawsMouseupHandler = (event) => {
+            element._lunaMouseupHandler = (event) => {
                 if (event.button === 1) {
                     event.preventDefault();
                     event.stopPropagation();
@@ -2289,8 +2300,8 @@
                 }
             };
 
-            element.addEventListener('mousedown', element._lunawsMousedownHandler);
-            element.addEventListener('mouseup', element._lunawsMouseupHandler);
+            element.addEventListener('mousedown', element._lunaMousedownHandler);
+            element.addEventListener('mouseup', element._lunaMouseupHandler);
 
         }
         
@@ -2884,265 +2895,73 @@
         let currentAudio = null;
 
         // 朗读文本
-        function readText(text, element = null) {
-            if (!text || !isConnected) return false;
-
-            // 停止之前的朗读
-            stopReading();
-            
-            // 确保有足够的延迟让上一个音频停止
-            if (lastAudioStopTime && (Date.now() - lastAudioStopTime < 100)) {
-                console.log('等待上一个音频资源完全释放...');
-                return setTimeout(() => readText(text, element), 150);
-            }
-
+        function readText(text, element = null) {     
             // 使用HTTP API发送朗读请求
             const baseUrl = userSettings.apiUrl;
             const url = `${baseUrl}/api/tts?text=${encodeURIComponent(text)}`;
-            let success = false;
             
             fetch(url)
                 .then(response => {
                     if (!response.ok) {
                         throw new Error(`HTTP错误! 状态: ${response.status}`);
                     }
-                    return response.blob();
+                    return response.arrayBuffer();
                 })
-                .then(blob => {
-                    const audioUrl = URL.createObjectURL(blob);
-                    const audioData = {
-                        status: 'success',
-                        audio_data: audioUrl,
-                        is_blob_url: true
-                    };
-                    playAudio(audioData);
-                    success = true;
+                .then(arrayBuffer => {
+                    playAudioBlob(arrayBuffer);
                 })
                 .catch(error => {
                     console.error('[LunaHTTP] TTS请求失败:', error);
-                    success = false;
                 });
 
             // 添加视觉反馈
-            element.classList.add('luna-reaction');
-            setTimeout(() => { element.classList.remove('luna-reaction'); }, 500);
-
-            return success;
-        }
-
-        // 处理朗读响应
-        function handleReadResult(data) {
-            // 有音频数据的情况
-            if (data.status === 'success' && data.audio_data) {
-                // 确保在处理新音频前，之前的音频已经停止
-                if (currentAudio) {
-                    stopReading();
-                    // 如果刚刚停止了音频，添加小延迟再播放新音频
-                    setTimeout(() => playAudio(data), 50);
-                } else {
-                    playAudio(data);
-                }
-            } 
-            // 服务器直接播放音频的情况
-            else if (data.status === 'read_text_success') {
-                console.log('服务器已直接播放音频:', data.message || '');
-                
-                // 一段时间后移除朗读标记
-                setTimeout(() => {
-                    stopReading();
-                }, 10000); // 假设10秒足够播放完成
+            if (element) {
+                element.classList.add('luna-reaction');
+                setTimeout(() => { element.classList.remove('luna-reaction'); }, 500);
             }
-            // 其他情况
-            else {
-                console.log('朗读请求完成，但未返回音频数据:', data);
-                stopReading();
-            }
+
+            return true;
         }
 
         // 停止朗读
-        let lastAudioStopTime = 0; // 添加上一次停止朗读的时间标记
-        
         function stopReading() {
-            // 停止当前音频播放
             if (currentAudio) {
-                try {
-                    currentAudio.pause();
-                    
-                    // 确保音频资源被释放
-                    if (currentAudio.src) {
-                        URL.revokeObjectURL(currentAudio.src);
-                        currentAudio.src = '';
-                        currentAudio.load(); // 强制重新加载以释放资源
-                    }
-                    
-                    currentAudio = null;
-                    lastAudioStopTime = Date.now(); // 记录停止时间
-                    console.log('已停止之前的音频播放');
-                } catch (e) {
-                    console.error('停止之前音频时出错:', e);
+                currentAudio.pause();
+                if (currentAudio.src) {
+                    URL.revokeObjectURL(currentAudio.src);
+                }
+                currentAudio = null;
+            }
+        }
+
+        // 播放二进制音频数据
+        function playAudioBlob(arrayBuffer, mimeType = "audio/mpeg") {
+            // 停止之前的朗读
+            if (currentAudio) {
+                currentAudio.pause();
+                if (currentAudio.src) {
+                    URL.revokeObjectURL(currentAudio.src);
                 }
             }
-        }
-
-        // 播放音频
-        function playAudio(data) {
-            try {
-                // 先确保之前的音频已完全停止
-                stopReading();
-                
-                // 获取音频格式
-                const format = data.format || 'wav';
-                
-                // 创建音频Blob
-                const audioBlob = base64ToBlob(data.audio_data, `audio/${format}`);
-                
-                // 创建音频元素
-                const audioElement = new Audio();
-                
-                // 保存音频引用
-                currentAudio = audioElement;
-                
-                // 设置音频源
-                const audioUrl = URL.createObjectURL(audioBlob);
-                audioElement.src = audioUrl;
-                
-                // 播放开始
-                audioElement.onplay = () => {
-                    console.log('音频开始播放');
-                };
-                
-                // 播放结束
-                audioElement.onended = () => {
-                    stopReading();
-                    URL.revokeObjectURL(audioUrl);
-                    
-                    // 在自动播放模式下，播放结束后自动跳转到下一段
-                    if (isAutoPlayMode && currentParagraph) {
-                        console.log('自动播放模式：准备跳转到下一段');
-                        setTimeout(() => {
-                            navigateToNextParagraph();
-                        }, 500); // 添加短暂延迟再跳转，提供更好的用户体验
-                    }
-                };
-                
-                // 播放错误
-                audioElement.onerror = (e) => {
-                    console.error('音频播放错误:', e);
-                    stopReading();
-                    URL.revokeObjectURL(audioUrl);
-                };
-                
-                // 开始播放
-                audioElement.play().catch(e => {
-                    console.error('无法播放音频:', e);
-                    stopReading();
-                    URL.revokeObjectURL(audioUrl);
-                });
-            } catch (e) {
-                console.error('处理音频数据出错:', e);
-                stopReading();
-            }
-        }
-
-        // base64转换为blob
-        function base64ToBlob(base64, mimeType) {
-            const byteCharacters = atob(base64);
-            const byteArrays = [];
             
-            for (let offset = 0; offset < byteCharacters.length; offset += 512) {
-                const slice = byteCharacters.slice(offset, offset + 512);
+            const blob = new Blob([arrayBuffer], { type: mimeType });
+            const url = URL.createObjectURL(blob);
+            
+            const audio = new Audio(url);
+            currentAudio = audio;
+            
+            // 播放结束时清理资源
+            audio.onended = () => {
+                URL.revokeObjectURL(url);
+                currentAudio = null;
                 
-                const byteNumbers = new Array(slice.length);
-                for (let i = 0; i < slice.length; i++) {
-                    byteNumbers[i] = slice.charCodeAt(i);
+                // 在自动播放模式下，播放结束后自动跳转到下一段
+                if (isAutoPlayMode && currentParagraph) {
+                    setTimeout(() => navigateToNextParagraph(), 500);
                 }
-                
-                const byteArray = new Uint8Array(byteNumbers);
-                byteArrays.push(byteArray);
-            }
-            return new Blob(byteArrays, { type: mimeType });
-        }
-
-        // 通用消息提示函数
-        function showMessage(message, type = 'info', duration = 1500) {
-            if (!userSettings.MessageToggle) return;
-            // 确保样式表已添加
-            if (!document.querySelector('#luna-message-styles')) {
-                const styleSheet = document.createElement('style');
-                styleSheet.id = 'luna-message-styles';
-                styleSheet.textContent = `
-                    .luna-message-container {
-                        position: fixed; top: 20px; left: 20px;
-                        max-width: 300px; z-index: 10000; 
-                    }
-                    .luna-status-message {
-                        color: white; padding: 8px; border-radius: 8px; font-size: .8em;
-                        margin-bottom: 8px; box-shadow: 0 3px 10px rgba(0,0,0,0.2);
-                        display: flex; align-items: center; opacity: 0; transform: translateX(50px);
-                        transition: opacity 0.3s, transform 0.3s; cursor: default;
-                    }
-                    .luna-message-icon { margin-right: 10px; font-size: .8em; }
-                    .luna-message-content { flex: 1; font-weight: 400; }
-                    .luna-status-message[data-type="info"] { background-color: rgba(33, 150, 243, 0.7); }
-                    .luna-status-message[data-type="success"] { background-color: rgba(76, 175, 80, 0.7); }
-                    .luna-status-message[data-type="warning"] { background-color: rgba(255, 152, 0, 0.7); }
-                    .luna-status-message[data-type="error"] { background-color: rgba(244, 67, 54, 0.7); }
-                `;
-                document.head.appendChild(styleSheet);
-            }
+            };
             
-            // 创建或获取消息容器
-            let messageContainer = document.querySelector('.luna-message-container');
-            if (!messageContainer) {
-                messageContainer = document.createElement('div');
-                messageContainer.className = 'luna-message-container';
-                document.body.appendChild(messageContainer);
-            }
-            
-            // 创建新的消息元素
-            const statusDiv = document.createElement('div');
-            statusDiv.className = 'luna-status-message';
-            statusDiv.dataset.type = type;
-            
-            // 设置图标
-            let icon = '💬';
-            if (type === 'success') { icon = '✅';
-            } else if (type === 'warning') { icon = '⚠️';
-            } else if (type === 'error') { icon = '❌'; }
-            
-            // 创建消息内容结构
-            statusDiv.innerHTML = `
-                <div class="luna-message-icon">${icon}</div>
-                <div class="luna-message-content">${message}</div>
-            `;
-            
-            // 添加到容器
-            messageContainer.appendChild(statusDiv);
-            
-            // 触发动画显示
-            setTimeout(() => {
-                statusDiv.style.opacity = '1';
-                statusDiv.style.transform = 'translateX(0)';
-            }, 10);
-            
-            // 自动移除状态提示
-            setTimeout(() => {
-                // 淡出动画
-                statusDiv.style.opacity = '0';
-                statusDiv.style.transform = 'translateX(50px)';
-                
-                // 移除元素
-                setTimeout(() => {
-                    if (messageContainer.contains(statusDiv)) {
-                        messageContainer.removeChild(statusDiv);
-                        
-                        // 如果容器为空，也移除容器
-                        if (messageContainer.children.length === 0) {
-                            document.body.removeChild(messageContainer);
-                        }
-                    }
-                }, 300);
-            }, duration);
+            audio.play();
         }
 
         init();
@@ -3151,9 +2970,9 @@
 
     /* ========== 注入脚本 ========== */
     // 注入到主页
-    const lunaWSCode = getLunaWSCode();
-    lunaWSCode();
-    console.log("[LunaHTTP] 在主页面初始化完成");
+    const lunaLensCode = getLunaLensCode();
+    lunaLensCode();
+    console.log("[LunaLens] 在主页面初始化完成");
 
     // 标记已注入的iframe
     const injectedIframes = new WeakSet();
@@ -3174,7 +2993,6 @@
                 iframe.closest('.luna-dictionary-popup') || 
                 iframe.hasAttribute('data-luna-dictionary') ||
                 (iframe.parentElement && iframe.parentElement.closest('.luna-dictionary-popup'))) {
-                console.log('跳过查词框iframe');
                 return; // 跳过查词框iframe
             }
 
@@ -3216,17 +3034,17 @@
             
             // 检查是否已注入
             if (iframeDoc.querySelector('script[data-luna-injected]')) {
-                console.log('此iframe已注入过Luna WS，跳过');
+                console.log('此iframe已注入过LunaLens，跳过');
                 return;
             }
             
             // 获取完整代码
-            const lunaWSCode = getLunaWSCode();
+            const lunaLensCode = getLunaLensCode();
             
             // 创建脚本
             const scriptText = `
-                (${lunaWSCode})();
-                console.log("[LunaHTTP] 在iframe中初始化完成");
+                (${lunaLensCode})();
+                console.log("[LunaLens] 在iframe中初始化完成");
             `;
             
             // 使用Blob URL创建脚本
