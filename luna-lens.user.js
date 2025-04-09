@@ -243,7 +243,7 @@
             
             // 确保已经初始化了用户设置并验证语言设置
             if (!userSettings || !userSettings.language || (userSettings.language !== 'zh' && userSettings.language !== 'en')) {
-                console.error('[LunaHTTP] 创建控制面板时用户设置或语言无效，重新验证设置');
+                console.error('[LunaLens] 创建控制面板时用户设置或语言无效，重新验证设置');
                 
                 // 重新验证或使用默认设置
                 if (userSettings && typeof userSettings === 'object') {
@@ -256,7 +256,7 @@
             // 获取有效的语言设置
             const lang = userSettings.language || 'zh';
 
-            console.log('[LunaHTTP] 创建控制面板，当前语言:', lang, 'userSettings:', userSettings);
+            console.log('[LunaLens] 创建控制面板，当前语言:', lang, 'userSettings:', userSettings);
             panel.innerHTML = `
                 <div class="luna-header">
                     <div class="luna-title">LunaLens</div>
@@ -435,7 +435,7 @@
             try {
                 // 验证控件是否已创建
                 if (!document.getElementById('luna-include-selectors')) {
-                    console.log('[LunaHTTP] 控件尚未创建，无法设置事件');
+                    console.log('[LunaLens] 控件尚未创建，无法设置事件');
                     return;
                 }
                 
@@ -528,9 +528,9 @@
                     }
                 });
                 
-                console.log('[LunaHTTP] 控制面板事件设置完成');
+                console.log('[LunaLens] 控制面板事件设置完成');
             } catch (e) {
-                console.error('[LunaHTTP] 设置控制面板事件时出错:', e);
+                console.error('[LunaLens] 设置控制面板事件时出错:', e);
             }
         }
     
@@ -649,7 +649,7 @@
                 
                 // 确保用户设置已初始化且语言设置有效
                 if (!userSettings || !userSettings.language || (userSettings.language !== 'zh' && userSettings.language !== 'en')) {
-                    console.warn('[LunaHTTP] 切换面板时发现用户设置无效，重新验证');
+                    console.warn('[LunaLens] 切换面板时发现用户设置无效，重新验证');
                     // 验证设置，确保语言设置有效
                     if (userSettings && typeof userSettings === 'object') {
                         userSettings = validateUserSettings(userSettings);
@@ -683,22 +683,22 @@
                     localStorage.setItem('luna-settings', JSON.stringify(settings));
                 }
                 
-                console.log('[LunaHTTP] 面板状态已切换');
+                console.log('[LunaLens] 面板状态已切换');
             } catch (e) {
-                console.error('[LunaHTTP] 切换控制面板时出错:', e);
+                console.error('[LunaLens] 切换控制面板时出错:', e);
             }
         }
 
         // 创建控制面板（只在主页面中执行）
         function ensureControlPanel() {
             if (window.top !== window.self) {
-                console.log("[LunaHTTP] 当前是iframe，跳过创建控制面板");
+                console.log("[LunaLens] 当前是iframe，跳过创建控制面板");
                 return;
             }
-            console.log("[LunaHTTP] 尝试创建控制面板");
+            console.log("[LunaLens] 尝试创建控制面板");
             // 确保用户设置已初始化
             if (!userSettings || !userSettings.language) {
-                console.warn('[LunaHTTP] 创建控制面板前用户设置未正确初始化，重新初始化');
+                console.warn('[LunaLens] 创建控制面板前用户设置未正确初始化，重新初始化');
                 // 尝试从localStorage加载
                 try {
                     const savedSettings = localStorage.getItem('luna-settings');
@@ -708,7 +708,7 @@
                             // 使用验证函数确保设置有效
                             userSettings = validateUserSettings(parsedSettings);
                         } catch (e) {
-                            console.error('[LunaHTTP] 解析设置失败', e);
+                            console.error('[LunaLens] 解析设置失败', e);
                             userSettings = JSON.parse(JSON.stringify(LUNA_DEFAULT_SETTINGS));
                         }
                     } else {
@@ -716,7 +716,7 @@
                         userSettings = JSON.parse(JSON.stringify(LUNA_DEFAULT_SETTINGS));
                     }
                 } catch (e) {
-                    console.error('[LunaHTTP] 紧急初始化设置失败', e);
+                    console.error('[LunaLens] 紧急初始化设置失败', e);
                     userSettings = JSON.parse(JSON.stringify(LUNA_DEFAULT_SETTINGS));
                 }
             }
@@ -728,9 +728,9 @@
             setTimeout(() => {
                 const panel = document.getElementById('luna-panel');
                 if (!panel) {
-                    console.error('[LunaHTTP] 控制面板创建失败，未找到面板元素');
+                    console.error('[LunaLens] 控制面板创建失败，未找到面板元素');
                 } else {
-                    console.log('[LunaHTTP] 控制面板创建成功');
+                    console.log('[LunaLens] 控制面板创建成功');
                 }
             }, 500);
         }
@@ -777,7 +777,7 @@
         // 定义设置验证函数 - 确保关键属性存在且类型正确
         function validateUserSettings(settings) {
             if (!settings || typeof settings !== 'object') {
-                console.error('[LunaHTTP] 设置格式无效，使用默认设置');
+                console.error('[LunaLens] 设置格式无效，使用默认设置');
                 return JSON.parse(JSON.stringify(LUNA_DEFAULT_SETTINGS));
             }
             
@@ -800,7 +800,7 @@
                         : defaults[key];
                     
                     if (settings[key] && validatedSettings[key] !== settings[key]) {
-                        console.warn(`[LunaHTTP] 语言设置无效: "${settings[key]}"，使用默认值: "${defaults[key]}"`);
+                        console.warn(`[LunaLens] 语言设置无效: "${settings[key]}"，使用默认值: "${defaults[key]}"`);
                     }
                     continue;
                 }
@@ -822,7 +822,7 @@
                     validatedSettings[key] = defaults[key];
                     
                     if (settings.hasOwnProperty(key)) {
-                        console.warn(`[LunaHTTP] 设置"${key}"类型不匹配 (期望${expectedType}，实际${actualType})，使用默认值`);
+                        console.warn(`[LunaLens] 设置"${key}"类型不匹配 (期望${expectedType}，实际${actualType})，使用默认值`);
                     }
                 }
             }
@@ -1067,9 +1067,9 @@
                 // 使用选择器管理器初始化段落点击处理
                 addParagraphClickHandlers(document);
 
-                console.log('[LunaHTTP] 初始化完成');
+                console.log('[LunaLens] 初始化完成');
             } catch (err) {
-                console.error('[LunaHTTP] 初始化失败:', err);
+                console.error('[LunaLens] 初始化失败:', err);
             }
         }
 
@@ -1086,13 +1086,13 @@
                         // 解析并验证设置
                         const parsedSettings = JSON.parse(savedSettings);
                         userSettings = validateUserSettings(parsedSettings);
-                        console.log('[LunaHTTP] 已加载并验证设置:', userSettings);
+                        console.log('[LunaLens] 已加载并验证设置:', userSettings);
                     } catch (e) {
-                        console.error('[LunaHTTP] 解析保存的设置失败:', e);
+                        console.error('[LunaLens] 解析保存的设置失败:', e);
                         // 保持默认设置
                     }
                 } else {
-                    console.log('[LunaHTTP] 未找到保存的设置，使用默认设置（默认语言：' + userSettings.language + '）');
+                    console.log('[LunaLens] 未找到保存的设置，使用默认设置（默认语言：' + userSettings.language + '）');
                 }
             } catch (e) {
                 console.error('读取设置时出错:', e);
@@ -1483,7 +1483,7 @@
                         return null; // 如果匹配排除选择器，直接返回null
                     }
                 } catch (e) {
-                    console.error('[LunaHTTP] Invalid exclude selector:', selector, e);
+                    console.error('[LunaLens] Invalid exclude selector:', selector, e);
                 }
             }
 
@@ -1494,7 +1494,7 @@
                         return null; // 如果匹配排除的class或id，直接返回null
                     }
                 } catch (e) {
-                    console.error('[LunaHTTP] Invalid exclude class/id selector:', selector, e);
+                    console.error('[LunaLens] Invalid exclude class/id selector:', selector, e);
                 }
             }
 
@@ -1509,7 +1509,7 @@
                         }
                     }
                 } catch (e) {
-                    console.error('[LunaHTTP] Invalid include selector:', selector, e);
+                    console.error('[LunaLens] Invalid include selector:', selector, e);
                 }
             }
 
@@ -1523,7 +1523,7 @@
                         }
                     }
                 } catch (e) {
-                    console.error('[LunaHTTP] Invalid include class/id selector:', selector, e);
+                    console.error('[LunaLens] Invalid include class/id selector:', selector, e);
                 }
             }
 
@@ -1858,7 +1858,7 @@
 
             // 检查段落是否有效或有足够的内容
             if (!originalText) {
-                console.log('[LunaHTTP] 跳过空内容段落');
+                console.log('[LunaLens] 跳过空内容段落');
                 return;
             }
             
@@ -1870,12 +1870,12 @@
             const maxLength = parseInt(userSettings.maxContentLength) || 1000;
             
             if (textLength < minLength) {
-                console.log(`[LunaHTTP] 跳过内容长度不足的段落 (${textLength} < ${minLength})`);
+                console.log(`[LunaLens] 跳过内容长度不足的段落 (${textLength} < ${minLength})`);
                 return;
             }
             
             if (textLength > maxLength) {
-                console.log(`[LunaHTTP] 跳过内容过长的段落 (${textLength} > ${maxLength})`);
+                console.log(`[LunaLens] 跳过内容过长的段落 (${textLength} > ${maxLength})`);
                 return;
             }
 
@@ -1896,10 +1896,10 @@
             // 根据垂直/水平设置添加对应的样式类
             if (userSettings.verticalPreference) {
                 paragraph.classList.add('luna-vertical-active-paragraph');
-                console.log('[LunaHTTP] 使用垂直样式模式');
+                console.log('[LunaLens] 使用垂直样式模式');
             } else {
                 paragraph.classList.add('luna-horizontal-active-paragraph');
-                console.log('[LunaHTTP] 使用水平样式模式');
+                console.log('[LunaLens] 使用水平样式模式');
             }
             
             currentParagraph = paragraph;
@@ -1963,7 +1963,7 @@
                     handleSegmentResult({segments: segments});
                 })
                 .catch(error => {
-                    console.error('[LunaHTTP] 分词请求失败:', error);
+                    console.error('[LunaLens] 分词请求失败:', error);
                     // 如果发送失败，恢复原始内容
                     element.innerHTML = originalContent;
                     element.classList.remove('luna-active-paragraph');
@@ -2028,12 +2028,12 @@
                 try {
                     processSegmentedContentIntoSentences(segmentedContent);
                 } catch (err) {
-                    console.error('[LunaHTTP] 处理句子时出错:', err);
+                    console.error('[LunaLens] 处理句子时出错:', err);
                     // 发生错误时使用简单模式显示结果
                     currentParagraph.innerHTML = segmentedContent;
                 }
             } catch (error) {
-                console.error('[LunaHTTP] 处理分词结果时出错:', error);
+                console.error('[LunaLens] 处理分词结果时出错:', error);
                 if (currentParagraph) {
                     currentParagraph.innerHTML = '分词处理错误: ' + error.message;
                 }
@@ -2123,7 +2123,7 @@
             attachWordEvents(currentParagraph);
             attachSentenceEvents(currentParagraph);
             
-            console.log('[LunaHTTP] 句子处理完成，句子数量:', currentParagraph.querySelectorAll('.luna-sentence').length);
+            console.log('[LunaLens] 句子处理完成，句子数量:', currentParagraph.querySelectorAll('.luna-sentence').length);
         }
 
         // 从单词创建句子
@@ -2311,10 +2311,10 @@
             if (navigator.clipboard && navigator.clipboard.writeText) {
                 navigator.clipboard.writeText(text)
                     .then(() => {
-                        console.log('[LunaHTTP] 文本已复制到剪贴板');
+                        console.log('[LunaLens] 文本已复制到剪贴板');
                     })
                     .catch(err => {
-                        console.error('[LunaHTTP] 复制失败:', err);
+                        console.error('[LunaLens] 复制失败:', err);
                         // 如果API不可用，使用传统方法
                         fallbackCopyTextToClipboard(text);
                     });
@@ -2342,11 +2342,11 @@
         function translateText(text) {
             try {
                 if (!currentParagraph || !text) {
-                    console.error('[LunaHTTP] 无法翻译：无当前段落或文本为空');
+                    console.error('[LunaLens] 无法翻译：无当前段落或文本为空');
                     return;
                 }
 
-                console.log('[LunaHTTP] 开始翻译文本:', text.substring(0, 30) + '...');
+                console.log('[LunaLens] 开始翻译文本:', text.substring(0, 30) + '...');
                 removeTranslationArea();
 
                 const translationArea = document.createElement('div');
@@ -2403,21 +2403,21 @@
                         handleTranslationResult(translationData);
                     })
                     .catch(error => {
-                        console.error('[LunaHTTP] 翻译请求出错:', error);
+                        console.error('[LunaLens] 翻译请求出错:', error);
                         translationArea.innerHTML = '<div style="padding:10px;color:red;text-align:center;">翻译请求失败</div>';
                     });
             } catch (error) {
-                console.error('[LunaHTTP] 翻译过程中出错:', error);
+                console.error('[LunaLens] 翻译过程中出错:', error);
             }
         }
 
         // 处理翻译结果
         function handleTranslationResult(data) {
             try {
-                console.log('[LunaHTTP] 收到翻译结果:', data);
+                console.log('[LunaLens] 收到翻译结果:', data);
                 
                 if (!currentParagraph) {
-                    console.error('[LunaHTTP] 没有当前段落，无法处理翻译结果');
+                    console.error('[LunaLens] 没有当前段落，无法处理翻译结果');
                     return;
                 }
 
@@ -2427,7 +2427,7 @@
                     document.querySelector('.luna-translation-area');
                     
                 if (!translationArea) {
-                    console.error('[LunaHTTP] 未找到翻译区域，创建新的翻译区域');
+                    console.error('[LunaLens] 未找到翻译区域，创建新的翻译区域');
                     // 如果找不到翻译区域，尝试重新创建一个
                     translateText(removeRubyText(currentParagraph));
                     return;
@@ -2450,7 +2450,7 @@
                 if (data.type === 'translation_result' && data.source_text) {
                     const currentText = translationArea.getAttribute('data-text');
                     if (currentText && currentText !== data.source_text) {
-                        console.log('[LunaHTTP] 翻译原文不匹配，跳过此结果');
+                        console.log('[LunaLens] 翻译原文不匹配，跳过此结果');
                         return;
                     }
                 }
@@ -2461,7 +2461,7 @@
 
                 // 如果没有翻译内容，则不显示
                 if (!translationText.trim()) {
-                    console.log('[LunaHTTP] 翻译内容为空，不显示');
+                    console.log('[LunaLens] 翻译内容为空，不显示');
                     return;
                 }
 
@@ -2516,9 +2516,9 @@
 
                 // 显示翻译区域
                 translationArea.style.display = '';
-                console.log(`[LunaHTTP] 【${translatorName}】翻译显示成功`);
+                console.log(`[LunaLens] 【${translatorName}】翻译显示成功`);
             } catch (error) {
-                console.error('[LunaHTTP] 处理翻译结果时出错:', error);
+                console.error('[LunaLens] 处理翻译结果时出错:', error);
             }
         }
 
@@ -2618,12 +2618,12 @@
                             
                             handleDictionaryResult(dictResult);
                         } catch (e) {
-                            console.error('[LunaHTTP] 解析词典结果时出错:', e);
+                            console.error('[LunaLens] 解析词典结果时出错:', e);
                         }
                     };
                     
                     eventSource.onerror = function() {
-                        console.error('[LunaHTTP] 词典API连接错误');
+                        console.error('[LunaLens] 词典API连接错误');
                         if (loadingIndicator) {
                             loadingIndicator.textContent = '词典查询失败';
                         }
@@ -2738,12 +2738,12 @@
                     
                     handleDictionaryResult(dictResult);
                 } catch (e) {
-                    console.error('[LunaHTTP] 解析词典结果时出错:', e);
+                    console.error('[LunaLens] 解析词典结果时出错:', e);
                 }
             };
             
             eventSource.onerror = function() {
-                console.error('[LunaHTTP] 词典API连接错误');
+                console.error('[LunaLens] 词典API连接错误');
                 const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
                 const loadingIndicator = iframeDoc.querySelector('.dict-loading');
                 if (loadingIndicator) {
@@ -2911,7 +2911,7 @@
                     playAudioBlob(arrayBuffer);
                 })
                 .catch(error => {
-                    console.error('[LunaHTTP] TTS请求失败:', error);
+                    console.error('[LunaLens] TTS请求失败:', error);
                 });
 
             // 添加视觉反馈
