@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LunaLens
 // @namespace    http://tampermonkey.net/
-// @version      0.1.3
+// @version      0.1.2
 // @description  通过HTTP API连接LunaTranslator实现浏览器上的原文的分词、翻译和查词功能 
 // @author       Raindrop213
 // @match        *://**/*
@@ -13,6 +13,10 @@
 
 (function() {
     'use strict';
+
+    /* 打包脚本 方便后面注入到Iframe */
+    const getLunaLensCode = function() {
+        return function initFunction() {
 
         /* ========== 控制面板（面板只在主页面中创建） ========== */
         // 文本翻译映射
@@ -1062,115 +1066,10 @@
                 
                 // 使用选择器管理器初始化段落点击处理
                 addParagraphClickHandlers(document);
-                
-                // 配置并启动MutationObserver以监控DOM变化，特别是新添加的iframe
-                setupMutationObserver();
 
                 console.log('[LunaLens] 初始化完成');
             } catch (err) {
                 console.error('[LunaLens] 初始化失败:', err);
-            }
-        }
-
-        // 设置MutationObserver监视DOM变化
-        function setupMutationObserver() {
-            try {
-                // 创建辅助函数处理iframe
-                function handleIframe(iframe) {
-                    // 使用安全的方式处理iframe
-                    setTimeout(() => {
-                        try {
-                            // 检查是否为LunaLens内部使用的iframe
-                            const isLunaDictIframe = iframe.classList && 
-                                (iframe.classList.contains('luna-dict-iframe') || 
-                                (iframe.closest && iframe.closest('.luna-dictionary-popup')) || 
-                                iframe.hasAttribute('data-luna-dictionary'));
-                            
-                            if (isLunaDictIframe) {
-                                console.log('[LunaLens] 跳过词典iframe');
-                                return;
-                            }
-                            
-                            // 添加onload处理器
-                            iframe.addEventListener('load', function() {
-                                try {
-                                    // 再次检查是否为内部iframe
-                                    if (iframe.classList && iframe.classList.contains('luna-dict-iframe')) {
-                                        return;
-                                    }
-                                    
-                                    // 访问iframe内容文档
-                                    const iframeDoc = iframe.contentDocument || 
-                                                    (iframe.contentWindow && iframe.contentWindow.document);
-                                    
-                                    // 如果能够获取文档，添加事件处理器
-                                    if (iframeDoc) {
-                                        console.log('[LunaLens] iframe已加载，添加事件处理器');
-                                        
-                                        // 为iframe添加样式表
-                                        if (iframeDoc.head && STYLES) {
-                                            try {
-                                                iframeDoc.head.appendChild(iframeDoc.createElement('style')).textContent = STYLES;
-                                                console.log('[LunaLens] 已向iframe添加样式表');
-                                            } catch (styleErr) {
-                                                console.error('[LunaLens] 向iframe添加样式失败:', styleErr);
-                                            }
-                                        }
-                                        
-                                        addParagraphClickHandlers(iframeDoc);
-                                    }
-                                } catch (e) {
-                                    // 可能是跨域iframe，忽略错误
-                                    console.log('[LunaLens] 无法访问iframe内容，可能是跨域限制');
-                                }
-                            });
-                        } catch (e) {
-                            console.log('[LunaLens] 处理iframe时出错:', e);
-                        }
-                    }, 0);
-                }
-
-                // 递归处理节点及其子节点
-                function processNode(node) {
-                    // 仅处理DOM节点元素
-                    if (node.nodeType !== Node.ELEMENT_NODE) return;
-                    
-                    // 检查是否是iframe
-                    if (node.nodeName === 'IFRAME') {
-                        handleIframe(node);
-                    } else if (node.querySelectorAll) {
-                        // 处理子iframe
-                        try {
-                            const iframes = node.querySelectorAll('iframe');
-                            if (iframes.length > 0) {
-                                iframes.forEach(handleIframe);
-                            }
-                        } catch (e) {
-                            // 忽略错误
-                        }
-                    }
-                }
-
-                // 创建观察器实例
-                const observer = new MutationObserver((mutations) => {
-                    mutations.forEach((mutation) => {
-                        if (mutation.type === 'childList') {
-                            mutation.addedNodes.forEach(processNode);
-                        }
-                    });
-                });
-                
-                // 配置观察器 - 观察body的变化
-                observer.observe(document.body, {
-                    childList: true,
-                    subtree: true,
-                    attributes: false,
-                    characterData: false
-                });
-                
-                console.log('[LunaLens] MutationObserver已安全设置');
-            } catch (e) {
-                console.error('[LunaLens] 设置MutationObserver失败:', e);
             }
         }
 
@@ -2015,7 +1914,7 @@
             }
         }
 
-        // 段落分词处理请求
+        // 在线模式的处理逻辑
         function processParagraph(element, originalText) {
             // 添加段落点击事件
             attachParagraphEvents(originalText, element);
@@ -2068,8 +1967,6 @@
                     // 如果发送失败，恢复原始内容
                     element.innerHTML = originalContent;
                     element.classList.remove('luna-active-paragraph');
-                    element.classList.remove('luna-vertical-active-paragraph');
-                    element.classList.remove('luna-horizontal-active-paragraph');
                     currentParagraph = null;
                     originalContent = null;
                     return;
@@ -3089,6 +2986,118 @@
         }
 
         init();
+        }
+    }
+
+    /* ========== 注入脚本 ========== */
+    // 注入到主页
+    const lunaLensCode = getLunaLensCode();
+    lunaLensCode();
+    console.log("[LunaLens] 在主页面初始化完成");
+
+    // 标记已注入的iframe
+    const injectedIframes = new WeakSet();
+
+    // 注入到iframe
+    function injectToIframes() {
+        const iframes = document.querySelectorAll('iframe');
+        console.log('找到iframe数量:', iframes.length);
+
+        iframes.forEach((iframe, index) => {
+            // 检查是否已经注入过
+            if (injectedIframes.has(iframe)) {
+                return; // 跳过已注入的iframe
+            }
+
+            // 排除查词框iframe
+            if (iframe.classList.contains('luna-dict-iframe') || 
+                iframe.closest('.luna-dictionary-popup') || 
+                iframe.hasAttribute('data-luna-dictionary') ||
+                (iframe.parentElement && iframe.parentElement.closest('.luna-dictionary-popup'))) {
+                return; // 跳过查词框iframe
+            }
+
+            try {
+                if (iframe.contentDocument && iframe.contentDocument.readyState === 'complete') {
+                    console.log(`正在注入到iframe ${index}`);
+                    injectScriptToIframe(iframe);
+                    // 标记为已注入
+                    injectedIframes.add(iframe);
+                } else {
+                    iframe.addEventListener('load', function() {
+                        // 防止重复注入
+                        if (injectedIframes.has(iframe)) return;
+                        
+                        // 再次检查是否为查词框iframe（可能在加载后添加了类名）
+                        if (iframe.classList.contains('luna-dict-iframe') || 
+                            iframe.closest('.luna-dictionary-popup') || 
+                            iframe.hasAttribute('data-luna-dictionary') ||
+                            (iframe.parentElement && iframe.parentElement.closest('.luna-dictionary-popup'))) {
+                            console.log('跳过查词框iframe');
+                            return;
+                        }
+                        
+                        console.log(`iframe ${index} 加载完成，正在注入`);
+                        injectScriptToIframe(iframe);
+                        // 标记为已注入
+                        injectedIframes.add(iframe);
+                    });
+                }
+            } catch (e) {
+                console.error(`无法访问iframe ${index}:`, e);
+            }
+        });
+    }
+
+    function injectScriptToIframe(iframe) {
+        try {
+            const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+            
+            // 检查是否已注入
+            if (iframeDoc.querySelector('script[data-luna-injected]')) {
+                console.log('此iframe已注入过LunaLens，跳过');
+                return;
+            }
+            
+            // 获取完整代码
+            const lunaLensCode = getLunaLensCode();
+            
+            // 创建脚本
+            const scriptText = `
+                (${lunaLensCode})();
+                console.log("[LunaLens] 在iframe中初始化完成");
+            `;
+            
+            // 使用Blob URL创建脚本
+            const blob = new Blob([scriptText], {type: 'application/javascript'});
+            const url = URL.createObjectURL(blob);
+            
+            // 创建script标签并添加到iframe
+            const script = iframeDoc.createElement('script');
+            script.src = url;
+            script.setAttribute('data-luna-injected', 'true'); // 添加标记
+            iframeDoc.head.appendChild(script);
+            
+            // 清理Blob URL
+            script.onload = function() {
+                URL.revokeObjectURL(url);
+            };
+            
+            console.log('成功注入脚本到iframe');
+        } catch (e) {
+            console.error('注入脚本到iframe失败:', e);
+        }
+    }
+
+    // 页面加载完成后执行注入
+    if (document.readyState === 'complete') {
+        injectToIframes();
+    } else {
+        window.addEventListener('load', injectToIframes);
+    }
+
+    // 对于动态加载的iframe，定期检查并注入
+    setInterval(injectToIframes, 3000);
 })() 
 
 
