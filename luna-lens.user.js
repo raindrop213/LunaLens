@@ -16,12 +16,13 @@
     const LUNA_DEFAULT_SETTINGS = {
         language: 'zh', // 默认使用中文
         apiUrl: 'http://127.0.0.1:2333',
-        floatingTranslation: true,
+        showTranslationsAbove: false,
         verticalPreference: false,
         scrollToParagraph: true,
         readActiveParagraph: false,
         readActiveWord: true,
-        MessageToggle: true,
+        messageToggle: true,
+        dictionaryCompatibleMode: false,
 
         sentenceDelimiters: '。．.!?！？…',
         sentenceThreshold: 20,
@@ -62,16 +63,12 @@
         // 查词相关状态
         selectedWords: [], // 当前选中的单词
         dictionaryPopup: null, // 字典弹窗元素
-        currentWordElement: null, // 当前查询的单词元素
         eventSource: null, // EventSource连接
-        fetchController: null, // Fetch控制器
-        cleanupDictionary: null, // 清理函数
-        currentDictQuery: null, // 当前查询
     };
     
     // 配置
     const CONFIG = {
-        TIMEOUT: 3000,
+        TIMEOUT: 5000,
         TAGS: userSettings.includeSelectors.split(',').map(s => s.trim())
     };
     
@@ -90,6 +87,17 @@
                     position: relative;
                     box-shadow: 1px 2px 4px 2px rgba(122, 122, 122, 0.2);
                 }
+                .luna-translator-item {
+                    font-size: small;
+                }
+                .luna-translator-name {
+                    color: #7b7b7b70;
+                    font-size: smaller;
+                }
+                .luna-hr {
+                    border: 1px solid #9393931c;
+                }
+                
                 .luna-highlight {
                     padding: 8px; border-radius: 3px;
                     transition: all 0.1s ease-in-out;
@@ -287,7 +295,7 @@
         },
         
         showMessage(message, duration = 1000) {
-            if (!userSettings.MessageToggle) return;
+            if (!userSettings.messageToggle) return;
             
             const msgDiv = document.createElement('div');
             msgDiv.className = 'luna-message';
@@ -384,7 +392,7 @@
                     language: "Interface Language:",
                     serverUrl: "Server URL:",
                     WindowStyle: "Window Style:",
-                    useFloatingWindow: "Use floating translation window",
+                    showTranslationsAbove: "Show Translation Above",
                     verticalPreference: "Vertical Writing Mode",
                     scrollToParagraph: "Auto scroll to paragraph",
                     keyNextParagraph: "Next Paragraph:",
@@ -401,7 +409,8 @@
                     readActiveParagraph: "Read Active Paragraph",
                     readActiveWord: "Read Active Word",
                     others: "Others",
-                    MessageToggle: "Show Message",
+                    messageToggle: "Show Message",
+                    dictionaryCompatibleMode: "Dictionary Compatible Mode",
                     settingsSaved: "Settings saved √",
                     refreshNow: "Refresh Now",
                     refreshLater: "Later",
@@ -435,7 +444,7 @@
                     serverUrl: "服务器:",
                     language: "界面语言:",
                     WindowStyle: "窗口样式:",
-                    useFloatingWindow: "使用浮动翻译窗口",
+                    showTranslationsAbove: "翻译置于前面",
                     verticalPreference: "垂直排版模式",
                     scrollToParagraph: "自动滚动到段落位置",
                     keyNextParagraph: "下一段落:",
@@ -452,7 +461,8 @@
                     readActiveParagraph: "朗读激活段落",
                     readActiveWord: "朗读激活单词",
                     others: "其他:",
-                    MessageToggle: "显示消息",
+                    messageToggle: "显示消息",
+                    dictionaryCompatibleMode: "词典兼容模式",
                     settingsSaved: "设置已保存√",
                     refreshNow: "立即刷新",
                     refreshLater: "稍后刷新",
@@ -506,8 +516,8 @@
                         <div class="luna-settings-row">
                             <label>${PANEL_TEXT[lang].WindowStyle}</label>
                             <div class="luna-toggle">
-                                <input type="checkbox" id="luna-floating-translation" ${userSettings.floatingTranslation ? 'checked' : ''}>
-                                <label for="luna-floating-translation">${PANEL_TEXT[lang].useFloatingWindow}</label>
+                                <input type="checkbox" id="luna-show-translations-above" ${userSettings.showTranslationsAbove ? 'checked' : ''}>
+                                <label for="luna-show-translations-above">${PANEL_TEXT[lang].showTranslationsAbove}</label>
                             </div>
                             <div class="luna-toggle">
                                 <input type="checkbox" id="luna-vertical-preference" ${userSettings.verticalPreference ? 'checked' : ''}>
@@ -532,8 +542,12 @@
                         <div class="luna-settings-row">
                             <label>${PANEL_TEXT[lang].others}</label>
                             <div class="luna-toggle">
-                                <input type="checkbox" id="luna-message-toggle" ${userSettings.MessageToggle ? 'checked' : ''}>
-                                <label for="luna-message-toggle">${PANEL_TEXT[lang].MessageToggle}</label>
+                                <input type="checkbox" id="luna-message-toggle" ${userSettings.messageToggle ? 'checked' : ''}>
+                                <label for="luna-message-toggle">${PANEL_TEXT[lang].messageToggle}</label>
+                            </div>
+                            <div class="luna-toggle">
+                                <input type="checkbox" id="luna-dictionary-compatible-mode" ${userSettings.dictionaryCompatibleMode ? 'checked' : ''}>
+                                <label for="luna-dictionary-compatible-mode">${PANEL_TEXT[lang].dictionaryCompatibleMode}</label>
                             </div>
                         </div>
                     </div>
@@ -742,12 +756,13 @@
                 const newSettings = {
                     language: document.getElementById('luna-language').value,
                     apiUrl: document.getElementById('luna-url').value,
-                    floatingTranslation: document.getElementById('luna-floating-translation').checked,
+                    showTranslationsAbove: document.getElementById('luna-show-translations-above').checked,
                     verticalPreference: document.getElementById('luna-vertical-preference').checked,
                     scrollToParagraph: document.getElementById('luna-scroll-to-paragraph').checked,
                     readActiveParagraph: document.getElementById('luna-read-active-paragraph').checked,
                     readActiveWord: document.getElementById('luna-read-active-word').checked,
-                    MessageToggle: document.getElementById('luna-message-toggle').checked,
+                    messageToggle: document.getElementById('luna-message-toggle').checked,
+                    dictionaryCompatibleMode: document.getElementById('luna-dictionary-compatible-mode').checked,
                     
                     sentenceDelimiters: document.getElementById('luna-sentence-delimiters').value,
                     sentenceThreshold: parseInt(document.getElementById('luna-sentence-threshold').value, 10),
@@ -1366,9 +1381,6 @@
         queryWord(wordElement, word) {
             if (!word) return;
             
-            // 保存当前查询的单词元素
-            state.currentWordElement = wordElement;
-            
             // 关闭之前的弹窗
             this.closeDictionaryPopup();
             
@@ -1563,6 +1575,21 @@
             const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
             if (!iframeDoc) return;
             
+            // 准备词典UI
+            const {tabsContainer, entriesContainer} = this.prepareDictionaryUI(iframeDoc, word);
+            
+            // 根据兼容模式设置使用不同的查词方法
+            if (userSettings.dictionaryCompatibleMode) {
+                // 兼容模式直接使用GM方法
+                this.fetchDictionaryByGM(iframe, word, tabsContainer, entriesContainer);
+            } else {
+                // 标准模式使用EventSource
+                this.fetchDictionaryByEventSource(iframe, word, tabsContainer, entriesContainer);
+            }
+        },
+        
+        // 准备词典UI
+        prepareDictionaryUI(iframeDoc, word) {
             iframeDoc.body.innerHTML = '<div class="loading">正在加载词典数据...</div>';
             
             // 添加样式
@@ -1577,49 +1604,24 @@
                     border-bottom: 1px solid #eee; 
                     padding-bottom: 10px; 
                 }
-                .dict-content { 
-                    margin: 0; 
-                    padding: 0 5px;
-                }
-                .dict-content a {
-                    color: #0066cc;
-                    text-decoration: none;
-                }
-                .dict-content a:hover {
-                    text-decoration: underline;
-                }
-                .loading { 
-                    padding: 20px; 
-                    text-align: center; 
-                    color: #666; 
-                }
+                .dict-content { margin: 0; padding: 0 5px; }
+                .dict-content a { color: #0066cc; text-decoration: none; }
+                .dict-content a:hover { text-decoration: underline; }
+                .loading { padding: 20px; text-align: center; color: #666; }
                 .dict-tabs { 
-                    position: sticky; 
-                    top: 0; 
-                    background: white; 
-                    border-bottom: 1px solid #eee; 
-                    z-index: 10;
+                    position: sticky; top: 0; background: white; 
+                    border-bottom: 1px solid #eee; z-index: 10;
                 }
                 .dict-tab { 
-                    display: inline-block; 
-                    font-size: 12px; 
-                    padding: 5px 10px; 
-                    cursor: pointer; 
-                    border-radius: 3px 3px 0 0; 
+                    display: inline-block; font-size: 12px; padding: 5px 10px; 
+                    cursor: pointer; border-radius: 3px 3px 0 0; 
                 }
-                .dict-tab.active { 
-                    border: 1px solid #ddd; 
-                    border-bottom: 1px solid #fff; 
-                    margin-bottom: -1px; 
-                    background-color: #f9f9f9;
+                .dict-tab.active {
+                    border: 1px solid #ddd; border-bottom: 1px solid #fff; 
+                    margin-bottom: -1px; background-color: #f9f9f9;
                 }
-                .dict-entry { 
-                    display: none;
-                    margin-top: 10px;
-                }
-                .dict-entry.active {
-                    display: block;
-                }
+                .dict-entry { display: none; margin-top: 10px; }
+                .dict-entry.active { display: block; }
             `;
             iframeDoc.head.appendChild(style);
 
@@ -1656,291 +1658,239 @@
             tabsContainer.innerHTML = '';
             entriesContainer.innerHTML = '';
             
-            // 如果有正在进行的请求，中止它
-            if (state.cleanupDictionary) {
-                state.cleanupDictionary();
+            return {tabsContainer, entriesContainer};
+        },
+        
+        // 使用EventSource获取词典数据
+        fetchDictionaryByEventSource(iframe, word, tabsContainer, entriesContainer) {
+            // 如果有正在进行的请求，关闭它
+            if (state.eventSource) {
+                state.eventSource.close();
+                state.eventSource = null;
             }
             
-            // 是否已经回退到GM_xmlhttpRequest
-            let fallbackToGM = false;
-            let eventSourceTimer = null;
-            
-            const cleanupFunction = () => {
-                if (eventSourceTimer) {
-                    clearTimeout(eventSourceTimer);
-                    eventSourceTimer = null;
-                }
-                
-                if (state.eventSource) {
-                    state.eventSource.close();
-                    state.eventSource = null;
-                }
-                
-                if (state.fetchController) {
-                    state.fetchController.abort();
-                    state.fetchController = null;
-                }
-                
-                state.cleanupDictionary = null;
-            };
-            
-            // 保存清理函数
-            state.cleanupDictionary = cleanupFunction;
-            
-            // 尝试使用EventSource（更快的方法）
-            try {
-            // 使用事件流API获取多个词典结果
-            const fetchController = new AbortController();
-            const signal = fetchController.signal;
-            
-            // 保存当前的fetch controller，以便在需要时中止请求
-            state.fetchController = fetchController;
-                
-                // 设置超时，如果5秒内没有结果就切换到备用方法
-                eventSourceTimer = setTimeout(() => {
-                    console.log('EventSource超时，切换到GM_xmlhttpRequest方法');
-                    if (state.eventSource) {
-                        state.eventSource.close();
-                        state.eventSource = null;
-                    }
-                    
-                    if (!fallbackToGM) {
-                        fallbackToGM = true;
-                        this.fallbackToGMRequest(word, iframeDoc, tabsContainer, entriesContainer);
-                    }
-                }, 5000);
+            // 生成唯一请求ID，用于确认响应是否匹配当前请求
+            const requestId = Date.now().toString();
+            iframe.setAttribute('data-request-id', requestId);
             
             // 创建EventSource连接
             const eventSource = new EventSource(`${userSettings.apiUrl}/api/dictionary?word=${encodeURIComponent(word)}`);
             
             // 保存EventSource引用
             state.eventSource = eventSource;
-                
-                let hasReceivedData = false;
+            
+            // 获取iframe文档
+            const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+            
+            // 设置超时，如果5秒内没有收到数据，则显示提示
+            const timeoutTimer = setTimeout(() => {
+                // 超时，关闭EventSource
+                if (state.eventSource === eventSource) {
+                    eventSource.close();
+                    state.eventSource = null;
+                    
+                    // 检查是否仍为当前请求
+                    if (iframe.getAttribute('data-request-id') === requestId) {
+                        // 显示兼容模式提示
+                        const loadingIndicator = iframeDoc.querySelector('.loading');
+                        if (loadingIndicator) {
+                            loadingIndicator.textContent = '标准模式连接超时，请在设置中开启"词典兼容模式"尝试';
+                            loadingIndicator.style.display = 'block';
+                        }
+                    }
+                }
+            }, 5000);
             
             // 处理事件流数据
             eventSource.onmessage = (event) => {
-                    hasReceivedData = true;
-                    
-                    // 收到数据，清除超时定时器
-                    if (eventSourceTimer) {
-                        clearTimeout(eventSourceTimer);
-                        eventSourceTimer = null;
-                    }
-                    
+                // 收到数据，清除超时定时器
+                clearTimeout(timeoutTimer);
+                
+                // 检查响应是否匹配当前请求
+                if (iframe.getAttribute('data-request-id') !== requestId) {
+                    // 如果不匹配，表示已有新请求，关闭当前EventSource
+                    eventSource.close();
+                    return;
+                }
+                
                 try {
                     const data = JSON.parse(event.data);
-                    const dictName = data.name || '词典';
-                    const dictId = `dict-${dictName.replace(/\s+/g, '-')}`;
                     
                     // 隐藏加载提示
                     const loadingIndicator = iframeDoc.querySelector('.loading');
                     if (loadingIndicator) loadingIndicator.style.display = 'none';
                     
-                    // 检查是否已有该词典结果
-                    let entryDiv = iframeDoc.getElementById(dictId);
-                    let isNewDictionary = false;
-                    
-                    if (!entryDiv) {
-                        isNewDictionary = true;
-                        // 创建新词典条目
-                        entryDiv = iframeDoc.createElement('div');
-                        entryDiv.className = 'dict-entry';
-                        entryDiv.id = dictId;
-                        entryDiv.setAttribute('data-dict', dictName);
-                        
-                        entryDiv.innerHTML = `
-                            <div class="dict-content">${data.result || '无结果'}</div>
-                        `;
-                        
-                        entriesContainer.appendChild(entryDiv);
-                        
-                        // 添加词典标签
-                        const tab = iframeDoc.createElement('div');
-                        tab.className = 'dict-tab';
-                        tab.textContent = dictName;
-                        tab.setAttribute('data-dict', dictName);
-                        
-                        if (tabsContainer.children.length === 0) {
-                            tab.classList.add('active');
-                            entryDiv.classList.add('active');
-                        }
-                        
-                        tab.addEventListener('click', function() {
-                            // 更新标签状态
-                            iframeDoc.querySelectorAll('.dict-tab').forEach(t => t.classList.remove('active'));
-                            this.classList.add('active');
-                            
-                            // 更新词典显示
-                            const dictName = this.getAttribute('data-dict');
-                            iframeDoc.querySelectorAll('.dict-entry').forEach(entry => {
-                                if (entry.getAttribute('data-dict') === dictName) {
-                                    entry.classList.add('active');
-                                } else {
-                                    entry.classList.remove('active');
-                                }
-                            });
-                        });
-                        
-                        tabsContainer.appendChild(tab);
-                    } else {
-                        // 更新现有词典内容
-                        const contentDiv = entryDiv.querySelector('.dict-content');
-                        if (contentDiv) contentDiv.innerHTML = data.result || '无结果';
-                    }
-                    
-                    // 处理iframe中的链接点击
-                    entryDiv.querySelectorAll('a').forEach(link => {
-                        link.target = '_blank'; // 在新窗口打开
-                        link.addEventListener('click', function(e) {
-                            // 如果是定义跳转类的链接，可以阻止默认行为
-                            if (this.href.includes('#') || this.href.includes('javascript:')) {
-                                e.preventDefault();
-                            }
-                        });
-                    });
+                    // 添加词典条目
+                    this.addDictionaryEntry(iframeDoc, tabsContainer, entriesContainer, data);
                 } catch (error) {
                     console.error('解析词典数据失败:', error);
                 }
             };
             
-                eventSource.onerror = (error) => {
-                    console.error('EventSource错误:', error);
+            // 错误处理
+            eventSource.onerror = () => {
+                // 清除超时定时器
+                clearTimeout(timeoutTimer);
+                
+                // 出错时自动关闭连接
                 eventSource.close();
-                    state.eventSource = null;
-                    
-                    // 如果还没有收到任何数据，切换到备用方法
-                    if (!hasReceivedData && !fallbackToGM) {
-                        fallbackToGM = true;
-                        console.log('EventSource出错，切换到GM_xmlhttpRequest方法');
-                        this.fallbackToGMRequest(word, iframeDoc, tabsContainer, entriesContainer);
-                    } else if (!iframeDoc.querySelector('.dict-section') && !iframeDoc.querySelector('.dict-entry')) {
-                // 如果没有内容，显示错误信息
+                state.eventSource = null;
+                
+                // 检查是否仍为当前请求
+                if (iframe.getAttribute('data-request-id') === requestId) {
+                    // 仅显示兼容模式提示，不自动切换
                     const loadingIndicator = iframeDoc.querySelector('.loading');
                     if (loadingIndicator) {
-                        loadingIndicator.textContent = '获取词典数据失败';
+                        loadingIndicator.textContent = '标准模式连接失败，请在设置中开启"词典兼容模式"尝试';
+                        loadingIndicator.style.display = 'block';
                     }
                 }
             };
-            } catch (error) {
-                console.error('使用EventSource出错:', error);
-                if (!fallbackToGM) {
-                    fallbackToGM = true;
-                    this.fallbackToGMRequest(word, iframeDoc, tabsContainer, entriesContainer);
-                }
-            }
         },
         
-        // 回退到GM_xmlhttpRequest方法
-        fallbackToGMRequest(word, iframeDoc, tabsContainer, entriesContainer) {
-            console.log('使用GM_xmlhttpRequest方法获取词典数据');
+        // 使用GM_xmlhttpRequest并行获取多个词典数据
+        fetchDictionaryByGM(iframe, word, tabsContainer, entriesContainer, dictIds = []) {
+            // 生成唯一请求ID，用于确认响应是否匹配当前请求
+            const requestId = Date.now().toString();
+            iframe.setAttribute('data-request-id', requestId);
             
-            // 创建变量来存储当前查询
-            const currentQuery = { word, timestamp: Date.now() };
+            // 获取iframe文档
+            const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
             
-            // 记录当前查询
-            state.currentDictQuery = currentQuery;
-            
-            // 先获取字典列表
-            GM_xmlhttpRequest({
-                method: 'GET',
-                url: `${userSettings.apiUrl}/api/list/dictionary`,
-                onload: (response) => {
-                    // 检查是否是最新查询
-                    if (state.currentDictQuery !== currentQuery) {
-                        console.log('已有更新的查询，放弃处理旧结果');
-                        return;
+            // 如果没有提供词典ID列表，则先获取可用词典列表
+            if (!dictIds || dictIds.length === 0) {
+                GM_xmlhttpRequest({
+                    method: 'GET',
+                    url: `${userSettings.apiUrl}/api/list/dictionary`,
+                    onload: (response) => {
+                        // 检查响应是否匹配当前请求
+                        if (iframe.getAttribute('data-request-id') !== requestId) return;
+                        
+                        try {
+                            const dictList = JSON.parse(response.responseText);
+                            if (Array.isArray(dictList) && dictList.length > 0) {
+                                // 提取词典ID列表
+                                const ids = dictList.map(dict => dict.id);
+                                // 递归调用，使用获取的词典ID列表
+                                this.fetchDictionaryByGM(iframe, word, tabsContainer, entriesContainer, ids);
+                            }
+                        } catch (error) {
+                            console.error('获取词典列表失败:', error);
+                            const loadingIndicator = iframeDoc.querySelector('.loading');
+                            if (loadingIndicator) {
+                                loadingIndicator.textContent = '加载词典列表失败';
+                            }
+                        }
+                    },
+                    onerror: () => {
+                        // 检查响应是否匹配当前请求
+                        if (iframe.getAttribute('data-request-id') !== requestId) return;
+                        
+                        const loadingIndicator = iframeDoc.querySelector('.loading');
+                        if (loadingIndicator) {
+                            loadingIndicator.textContent = '获取词典列表失败';
+                            if (!userSettings.dictionaryCompatibleMode) {
+                                loadingIndicator.textContent += '，请尝试在设置中开启"词典兼容模式"';
+                            }
+                        }
                     }
-                    
-                    try {
-                        const dictionaries = JSON.parse(response.responseText);
-                        if (Array.isArray(dictionaries) && dictionaries.length > 0) {
+                });
+                return;
+            }
+            
+            // 记录未完成的请求数
+            let pendingRequests = dictIds.length;
+            
+            // 并行请求每个词典
+            dictIds.forEach(dictId => {
+                GM_xmlhttpRequest({
+                    method: 'GET',
+                    url: `${userSettings.apiUrl}/api/dictionary?id=${dictId}&word=${encodeURIComponent(word)}`,
+                    onload: (response) => {
+                        // 检查响应是否匹配当前请求
+                        if (iframe.getAttribute('data-request-id') !== requestId) return;
+                        
+                        try {
+                            const data = JSON.parse(response.responseText);
+                            
                             // 隐藏加载提示
                             const loadingIndicator = iframeDoc.querySelector('.loading');
                             if (loadingIndicator) loadingIndicator.style.display = 'none';
                             
-                            // 创建一个Promise数组来跟踪所有字典请求
-                            const dictPromises = dictionaries.map((dict, index) => {
-                                if (dict && dict.id) {
-                                    return this.queryDictionaryAsync(word, dict.id, dict.name, iframeDoc, tabsContainer, entriesContainer, index === 0, currentQuery);
-                                }
-                                return Promise.resolve();
-                            });
-                            
-                            // 并行处理所有字典请求
-                            Promise.allSettled(dictPromises).then(() => {
-                                if (state.currentDictQuery === currentQuery) {
-                                    // 所有字典查询完成后，对标签进行排序
-                                    this.sortDictionaryTabs(iframeDoc, tabsContainer);
-                                }
-                            });
-                        } else {
+                            // 添加词典条目
+                            this.addDictionaryEntry(iframeDoc, tabsContainer, entriesContainer, data);
+                        } catch (error) {
+                            console.error(`获取词典 ${dictId} 失败:`, error);
+                        }
+                        
+                        // 减少未完成请求计数
+                        pendingRequests--;
+                        
+                        // 如果所有请求都完成了，但没有词典结果，则显示提示
+                        if (pendingRequests === 0 && tabsContainer.children.length === 0) {
                             const loadingIndicator = iframeDoc.querySelector('.loading');
                             if (loadingIndicator) {
-                                loadingIndicator.textContent = '未找到可用的字典';
+                                loadingIndicator.textContent = '未找到词典结果';
+                                if (!userSettings.dictionaryCompatibleMode) {
+                                    loadingIndicator.textContent += '，请尝试在设置中开启"词典兼容模式"';
+                                }
                             }
                         }
-                    } catch (e) {
-                        console.error('解析字典列表失败:', e);
-                        const loadingIndicator = iframeDoc.querySelector('.loading');
-                        if (loadingIndicator) {
-                            loadingIndicator.textContent = '获取字典列表失败';
+                    },
+                    onerror: () => {
+                        // 检查响应是否匹配当前请求
+                        if (iframe.getAttribute('data-request-id') !== requestId) return;
+                        
+                        console.error(`获取词典 ${dictId} 失败`);
+                        
+                        // 减少未完成请求计数
+                        pendingRequests--;
+                        
+                        // 如果所有请求都完成了，但没有词典结果，则显示提示
+                        if (pendingRequests === 0 && tabsContainer.children.length === 0) {
+                            const loadingIndicator = iframeDoc.querySelector('.loading');
+                            if (loadingIndicator) {
+                                loadingIndicator.textContent = '未找到词典结果';
+                                if (!userSettings.dictionaryCompatibleMode) {
+                                    loadingIndicator.textContent += '，请尝试在设置中开启"词典兼容模式"';
+                                }
+                            }
                         }
                     }
-                },
-                onerror: (error) => {
-                    // 检查是否是最新查询
-                    if (state.currentDictQuery !== currentQuery) return;
-                    
-                    console.error('获取字典列表出错:', error);
-                    const loadingIndicator = iframeDoc.querySelector('.loading');
-                    if (loadingIndicator) {
-                        loadingIndicator.textContent = '获取字典列表出错，请检查API服务是否可用';
-                    }
-                }
+                });
             });
         },
         
-        // 异步查询特定字典
-        queryDictionaryAsync(word, dictionaryId, dictionaryName, iframeDoc, tabsContainer, entriesContainer, isFirst, queryIdentifier) {
-            return new Promise((resolve) => {
-                // 如果不是当前最新查询，直接返回
-                if (state.currentDictQuery !== queryIdentifier) {
-                    resolve();
-                    return;
-                }
-                
-                // 创建这个字典的标签和内容容器
-                const dictId = `dict-${dictionaryId.replace(/\s+/g, '-')}`;
-                
-                // 检查是否已存在这个词典
-                if (iframeDoc.getElementById(dictId)) {
-                    resolve();
-                    return;
-                }
-                
-                // 创建词典条目
-                const entryDiv = iframeDoc.createElement('div');
+        // 添加词典条目
+        addDictionaryEntry(iframeDoc, tabsContainer, entriesContainer, data) {
+            const dictName = data.name || '词典';
+            const dictId = `dict-${dictName.replace(/\s+/g, '-')}`;
+            
+            // 检查是否已有该词典结果
+            let entryDiv = iframeDoc.getElementById(dictId);
+            
+            if (!entryDiv) {
+                // 创建新词典条目
+                entryDiv = iframeDoc.createElement('div');
                 entryDiv.className = 'dict-entry';
                 entryDiv.id = dictId;
-                entryDiv.setAttribute('data-dict', dictionaryName);
+                entryDiv.setAttribute('data-dict', dictName);
                 
-                if (isFirst && !iframeDoc.querySelector('.dict-entry.active')) {
-                    entryDiv.classList.add('active');
-                }
+                entryDiv.innerHTML = `
+                    <div class="dict-content">${data.result || '无结果'}</div>
+                `;
                 
-                entryDiv.innerHTML = `<div class="dict-content">加载中...</div>`;
                 entriesContainer.appendChild(entryDiv);
                 
-                // 添加词典标签，但不立即设置为active
+                // 添加词典标签
                 const tab = iframeDoc.createElement('div');
                 tab.className = 'dict-tab';
-                tab.textContent = dictionaryName;
-                tab.setAttribute('data-dict', dictionaryName);
-                tab.style.opacity = '0.7'; // 未加载完成的标签显示为半透明
+                tab.textContent = dictName;
+                tab.setAttribute('data-dict', dictName);
                 
-                if (isFirst && !iframeDoc.querySelector('.dict-tab.active')) {
+                if (tabsContainer.children.length === 0) {
                     tab.classList.add('active');
+                    entryDiv.classList.add('active');
                 }
                 
                 tab.addEventListener('click', function() {
@@ -1960,143 +1910,19 @@
                 });
                 
                 tabsContainer.appendChild(tab);
-                
-                // 记录查询开始时间
-                const startTime = Date.now();
-                
-                // 使用GM_xmlhttpRequest查询特定字典
-                GM_xmlhttpRequest({
-                    method: 'GET',
-                    url: `${userSettings.apiUrl}/api/dictionary?word=${encodeURIComponent(word)}&id=${encodeURIComponent(dictionaryId)}`,
-                    onload: (response) => {
-                        // 如果不是当前最新查询，忽略结果
-                        if (state.currentDictQuery !== queryIdentifier) {
-                            resolve();
-                            return;
-                        }
-                        
-                        // 计算响应时间
-                        const responseTime = Date.now() - startTime;
-                        
-                        // 设置数据属性记录响应时间
-                        tab.setAttribute('data-response-time', responseTime);
-                        tab.style.opacity = '1'; // 加载完成后恢复透明度
-                        
-                        try {
-                            const data = JSON.parse(response.responseText);
-                            
-                            // 更新字典内容
-                            const contentDiv = entryDiv.querySelector('.dict-content');
-                            if (contentDiv) {
-                                if (data && data.result) {
-                                    contentDiv.innerHTML = data.result;
-                                    
-                                    // 如果有结果且没有其他已激活的词典，激活此词典
-                                    const hasActiveTab = iframeDoc.querySelector('.dict-tab.active[data-has-result="true"]');
-                                    if (!hasActiveTab) {
-                                        // 标记此标签有结果
-                                        tab.setAttribute('data-has-result', 'true');
-                                        
-                                        // 移除所有active状态
-                                        iframeDoc.querySelectorAll('.dict-tab').forEach(t => t.classList.remove('active'));
-                                        iframeDoc.querySelectorAll('.dict-entry').forEach(e => e.classList.remove('active'));
-                                        
-                                        // 激活此词典
-                                        tab.classList.add('active');
-                                        entryDiv.classList.add('active');
-                                    }
-                                } else {
-                                    contentDiv.textContent = '无结果';
-                                    contentDiv.style.color = '#999';
-                                    tab.style.opacity = '0.5'; // 无结果的标签显示更透明
-                                }
-                            }
-                            
-                            // 处理iframe中的链接点击
-                            entryDiv.querySelectorAll('a').forEach(link => {
-                                link.target = '_blank'; // 在新窗口打开
-                                link.addEventListener('click', function(e) {
-                                    // 如果是定义跳转类的链接，可以阻止默认行为
-                                    if (this.href.includes('#') || this.href.includes('javascript:')) {
-                                        e.preventDefault();
-                                    }
-                                });
-                            });
-                        } catch (e) {
-                            console.error(`解析 ${dictionaryId} 字典结果失败:`, e);
-                            const contentDiv = entryDiv.querySelector('.dict-content');
-                            if (contentDiv) {
-                                contentDiv.textContent = '获取结果失败';
-                                contentDiv.style.color = 'red';
-                            }
-                            tab.style.opacity = '0.5'; // 失败的标签显示更透明
-                        }
-                        
-                        resolve();
-                    },
-                    onerror: (error) => {
-                        // 如果不是当前最新查询，忽略错误
-                        if (state.currentDictQuery !== queryIdentifier) {
-                            resolve();
-                            return;
-                        }
-                        
-                        console.error(`查询 ${dictionaryId} 出错:`, error);
-                        const contentDiv = entryDiv.querySelector('.dict-content');
-                        if (contentDiv) {
-                            contentDiv.textContent = '查询失败';
-                            contentDiv.style.color = 'red';
-                        }
-                        tab.style.opacity = '0.5'; // 失败的标签显示更透明
-                        
-                        resolve();
-                    }
-                });
-            });
+            } else {
+                // 更新现有词典内容
+                const contentDiv = entryDiv.querySelector('.dict-content');
+                if (contentDiv) contentDiv.innerHTML = data.result || '无结果';
+            }
         },
-        
-        // 查询特定字典 - 保留以兼容现有代码，但内部调用异步版本
-        queryDictionary(word, dictionaryId, dictionaryName, iframeDoc, tabsContainer, entriesContainer, isFirst) {
-            // 创建一个虚拟的查询标识符
-            const tempQueryId = { word, timestamp: Date.now() };
-            this.queryDictionaryAsync(word, dictionaryId, dictionaryName, iframeDoc, tabsContainer, entriesContainer, isFirst, tempQueryId);
-        },
-        
-        // 对词典标签按响应时间排序
-        sortDictionaryTabs(iframeDoc, tabsContainer) {
-            const tabs = Array.from(tabsContainer.querySelectorAll('.dict-tab'));
-            
-            // 按响应时间排序（只排序已完成加载的标签）
-            tabs.sort((a, b) => {
-                const aTime = parseInt(a.getAttribute('data-response-time') || '999999');
-                const bTime = parseInt(b.getAttribute('data-response-time') || '999999');
-                return aTime - bTime;
-            });
-            
-            // 重新添加标签
-            tabs.forEach(tab => {
-                tabsContainer.appendChild(tab);
-            });
-        },
-        
+
         // 关闭查词弹窗
         closeDictionaryPopup() {
             // 关闭EventSource连接
             if (state.eventSource) {
                 state.eventSource.close();
                 state.eventSource = null;
-            }
-            
-            // 中止fetch请求
-            if (state.fetchController) {
-                state.fetchController.abort();
-                state.fetchController = null;
-            }
-            
-            // 执行清理函数
-            if (state.cleanupDictionary) {
-                state.cleanupDictionary();
-                state.cleanupDictionary = null;
             }
             
             // 移除弹窗
@@ -2217,43 +2043,90 @@
         createTranslation(element) {
             state.translation = document.createElement('div');
             state.translation.className = 'luna-translation';
-            state.translation.textContent = '正在翻译...';
-            element.parentNode.insertBefore(state.translation, element.nextSibling);
+            state.translation.innerHTML = '<div class="luna-translator-item">正在翻译...</div>';
+            if (userSettings.showTranslationsAbove) {
+                element.parentNode.insertBefore(state.translation, element.previousSibling);
+            } else {
+                element.parentNode.insertBefore(state.translation, element.nextSibling);
+            }
         },
         
         translate(text) {
             if (!text.trim()) {
-                this.updateTranslation('没有可翻译的文本');
+                this.updateTranslation('<div class="luna-translator-item">没有可翻译的文本</div>');
                 return;
             }
             
+            // 清除之前的翻译内容，显示加载信息
+            this.updateTranslation('<div class="luna-translator-item">正在获取翻译...</div>');
+            
+            // 直接获取翻译器列表并发起请求
             GM_xmlhttpRequest({
                 method: 'GET',
-                url: `${userSettings.apiUrl}/api/translate?text=${encodeURIComponent(text)}`,
+                url: `${userSettings.apiUrl}/api/list/translator`,
                 timeout: CONFIG.TIMEOUT,
-                onload: response => {
+                onload: (response) => {
                     try {
-                        const data = JSON.parse(response.responseText);
-                        this.updateTranslation(data.result || '翻译失败');
+                        const translators = JSON.parse(response.responseText);
+                        if (Array.isArray(translators) && translators.length > 0) {
+                            // 清空翻译容器
+                            state.translation.innerHTML = '';
+                            
+                            // 对每个翻译器发起请求
+                            translators.forEach((translator, index) => {
+                                // 为每个翻译器创建一个项，先显示加载中
+                                const translatorItem = document.createElement('div');
+                                translatorItem.className = 'luna-translator-item';
+                                translatorItem.innerHTML = `加载中...<span class="luna-translator-name">${translator.name}</span>`;
+                                state.translation.appendChild(translatorItem);
+                                
+                                // 如果不是最后一个翻译器，添加分隔线
+                                if (index < translators.length - 1) {
+                                    const hr = document.createElement('hr');
+                                    hr.className = 'luna-hr';
+                                    state.translation.appendChild(hr);
+                                }
+                                
+                                // 发起翻译请求
+                                GM_xmlhttpRequest({
+                                    method: 'GET',
+                                    url: `${userSettings.apiUrl}/api/translate?text=${encodeURIComponent(text)}&id=${encodeURIComponent(translator.id)}`,
+                                    timeout: CONFIG.TIMEOUT,
+                                    onload: (response) => {
+                                        try {
+                                            const data = JSON.parse(response.responseText);
+                                            translatorItem.innerHTML = `${data.result || '翻译失败'}<span class="luna-translator-name">${translator.name}</span>`;
+                                        } catch (error) {
+                                            translatorItem.innerHTML = `翻译结果解析失败<span class="luna-translator-name">${translator.name}</span>`;
+                                        }
+                                    },
+                                    onerror: () => {
+                                        translatorItem.innerHTML = `翻译请求失败<span class="luna-translator-name">${translator.name}</span>`;
+                                    },
+                                    ontimeout: () => {
+                                        translatorItem.innerHTML = `翻译请求超时<span class="luna-translator-name">${translator.name}</span>`;
+                                    }
+                                });
+                            });
+                        } else {
+                            this.updateTranslation('<div class="luna-translator-item">未找到可用的翻译器</div>');
+                        }
                     } catch (error) {
-                        this.updateTranslation('翻译结果解析失败');
-                        console.error('翻译结果解析失败:', error);
+                        this.updateTranslation('<div class="luna-translator-item">获取翻译器列表失败</div>');
                     }
                 },
-                onerror: error => {
-                    this.updateTranslation('翻译请求失败');
-                    console.error('翻译请求失败:', error);
+                onerror: () => {
+                    this.updateTranslation('<div class="luna-translator-item">获取翻译器列表失败</div>');
                 },
                 ontimeout: () => {
-                    this.updateTranslation('翻译请求超时');
-                    console.error('翻译请求超时');
+                    this.updateTranslation('<div class="luna-translator-item">获取翻译器列表超时</div>');
                 }
             });
         },
         
         updateTranslation(content) {
             if (state.translation) {
-                state.translation.textContent = content;
+                state.translation.innerHTML = content;
             }
         },
 
