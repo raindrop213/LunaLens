@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LunaLens
 // @namespace    http://tampermonkey.net/
-// @version      0.1.5
+// @version      0.1.6
 // @description  通过HTTP API连接LunaTranslator实现浏览器上的原文的分词、翻译、朗读和查词功能 
 // @author       Raindrop213
 // @match        *://*/*
@@ -85,19 +85,23 @@
             style.className = 'luna-styles';
             style.textContent = `
                 .luna-translation {
-                    padding: 8px; border-radius: 3px;
+                    padding: 8px !important;
+                    border-radius: 3px;
                     position: relative;
                     box-shadow: 1px 2px 4px 2px rgba(122, 122, 122, 0.2);
                 }
                 .luna-translator-item {
-                    font-size: small;
+                    font-size: 12px;
+                    margin: 0 !important;
+                    opacity: 88%;
                 }
                 .luna-translator-name {
-                    color: #7b7b7b70;
-                    font-size: smaller;
+                    opacity: 50%;
+                    font-size: 8px;
                 }
                 .luna-hr {
                     border: 1px solid #9393931c;
+                    margin: 3px !important;
                 }
                 
                 .luna-highlight {
@@ -422,7 +426,7 @@
                     confirmYes: "Yes",
                     confirmNo: "No",
                     autoPlayStatus: "↻",
-                    shortcutsHelp: "Please refer to: <a href='https://developer.mozilla.org/docs/Web/API/UI_Events/Keyboard_event_key_values' target='_blank'>key values</a><br>Left click to look up<br>Right click to select word<br>Middle click to read sentence or paragraph",
+                    shortcutsHelp: "Please refer to: <a href='https://developer.mozilla.org/docs/Web/API/UI_Events/Keyboard_event_key_values' target='_blank'>key values</a><br>Left click to look up<br>Right click to select word<br>Middle click to read sentence or paragraph<br>Ctrl+LeftClick to copy the sentence or paragraph",
                     includeSelectors: "Include HTML Tags:",
                     includeSelectorsHelp: "e.g: p, h1, h2, h3, h4, h5, h6, div",
                     excludeSelectors: "Exclude HTML Tags:",
@@ -476,7 +480,7 @@
                     confirmYes: "确定",
                     confirmNo: "取消",
                     autoPlayStatus: "↻",
-                    shortcutsHelp: "请参考：<a href='https://developer.mozilla.org/docs/Web/API/UI_Events/Keyboard_event_key_values' target='_blank'>按键名</a><br>鼠标左键查词<br>右键加选单词<br>鼠标中朗读句子或者段落",
+                    shortcutsHelp: "请参考：<a href='https://developer.mozilla.org/docs/Web/API/UI_Events/Keyboard_event_key_values' target='_blank'>按键名</a><br>鼠标左键查词<br>右键加选单词<br>鼠标中朗读句子或者段落<br>Ctrl+左键复制句子或段落",
                     includeSelectors: "包含HTML标签:",
                     includeSelectorsHelp: "例如：p, h1, h2, h3, h4, h5, h6, div",
                     excludeSelectors: "排除HTML标签:",
