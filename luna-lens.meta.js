@@ -6,5 +6,5 @@
 // @author       Raindrop213
 // @match        *://*/*
 // @grant        GM_xmlhttpRequest
-// @connect      *
+// @connect      127.0.0.1
 // ==/UserScript==
