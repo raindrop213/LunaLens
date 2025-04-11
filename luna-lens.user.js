@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LunaLens
 // @namespace    http://tampermonkey.net/
-// @version      0.1.6
+// @version      0.1.7
 // @description  通过HTTP API连接LunaTranslator实现浏览器上的原文的分词、翻译、朗读和查词功能 
 // @author       Raindrop213
 // @match        *://*/*
@@ -1707,22 +1707,31 @@
             // 获取iframe文档
             const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
             
+            // 处理连接结束时的逻辑（用于超时和错误情况）
+            const handleConnectionEnd = () => {
+                // 关闭连接
+                eventSource.close();
+                state.eventSource = null;
+                
+                // 检查是否仍为当前请求
+                if (iframe.getAttribute('data-request-id') === requestId) {
+                    // 只有在没有任何词典结果的情况下才显示提示
+                    if (tabsContainer.children.length === 0) {
+                        const loadingIndicator = iframeDoc.querySelector('.loading');
+                        this.showDictionaryStatus(loadingIndicator, '未找到词典结果');
+                    } else {
+                        // 已有词典结果，隐藏加载提示
+                        const loadingIndicator = iframeDoc.querySelector('.loading');
+                        if (loadingIndicator) loadingIndicator.style.display = 'none';
+                    }
+                }
+            };
+            
             // 设置超时，如果5秒内没有收到数据，则显示提示
             const timeoutTimer = setTimeout(() => {
-                // 超时，关闭EventSource
+                // 超时处理
                 if (state.eventSource === eventSource) {
-                    eventSource.close();
-                    state.eventSource = null;
-                    
-                    // 检查是否仍为当前请求
-                    if (iframe.getAttribute('data-request-id') === requestId) {
-                        // 显示兼容模式提示
-                        const loadingIndicator = iframeDoc.querySelector('.loading');
-                        if (loadingIndicator) {
-                            loadingIndicator.textContent = '标准模式连接超时，请在设置中开启"词典兼容模式"尝试';
-                            loadingIndicator.style.display = 'block';
-                        }
-                    }
+                    handleConnectionEnd();
                 }
             }, 5000);
             
@@ -1757,19 +1766,8 @@
                 // 清除超时定时器
                 clearTimeout(timeoutTimer);
                 
-                // 出错时自动关闭连接
-                eventSource.close();
-                state.eventSource = null;
-                
-                // 检查是否仍为当前请求
-                if (iframe.getAttribute('data-request-id') === requestId) {
-                    // 仅显示兼容模式提示，不自动切换
-                    const loadingIndicator = iframeDoc.querySelector('.loading');
-                    if (loadingIndicator) {
-                        loadingIndicator.textContent = '标准模式连接失败，请在设置中开启"词典兼容模式"尝试';
-                        loadingIndicator.style.display = 'block';
-                    }
-                }
+                // 错误处理
+                handleConnectionEnd();
             };
         },
         
@@ -1802,9 +1800,7 @@
                         } catch (error) {
                             console.error('获取词典列表失败:', error);
                             const loadingIndicator = iframeDoc.querySelector('.loading');
-                            if (loadingIndicator) {
-                                loadingIndicator.textContent = '加载词典列表失败';
-                            }
+                            this.showDictionaryStatus(loadingIndicator, '加载词典列表失败', false);
                         }
                     },
                     onerror: () => {
@@ -1812,12 +1808,7 @@
                         if (iframe.getAttribute('data-request-id') !== requestId) return;
                         
                         const loadingIndicator = iframeDoc.querySelector('.loading');
-                        if (loadingIndicator) {
-                            loadingIndicator.textContent = '获取词典列表失败';
-                            if (!userSettings.dictionaryCompatibleMode) {
-                                loadingIndicator.textContent += '，请尝试在设置中开启"词典兼容模式"';
-                            }
-                        }
+                        this.showDictionaryStatus(loadingIndicator, '获取词典列表失败');
                     }
                 });
                 return;
@@ -1854,12 +1845,7 @@
                         // 如果所有请求都完成了，但没有词典结果，则显示提示
                         if (pendingRequests === 0 && tabsContainer.children.length === 0) {
                             const loadingIndicator = iframeDoc.querySelector('.loading');
-                            if (loadingIndicator) {
-                                loadingIndicator.textContent = '未找到词典结果';
-                                if (!userSettings.dictionaryCompatibleMode) {
-                                    loadingIndicator.textContent += '，请尝试在设置中开启"词典兼容模式"';
-                                }
-                            }
+                            this.showDictionaryStatus(loadingIndicator, '未找到词典结果');
                         }
                     },
                     onerror: () => {
@@ -1874,12 +1860,7 @@
                         // 如果所有请求都完成了，但没有词典结果，则显示提示
                         if (pendingRequests === 0 && tabsContainer.children.length === 0) {
                             const loadingIndicator = iframeDoc.querySelector('.loading');
-                            if (loadingIndicator) {
-                                loadingIndicator.textContent = '未找到词典结果';
-                                if (!userSettings.dictionaryCompatibleMode) {
-                                    loadingIndicator.textContent += '，请尝试在设置中开启"词典兼容模式"';
-                                }
-                            }
+                            this.showDictionaryStatus(loadingIndicator, '未找到词典结果');
                         }
                     }
                 });
@@ -2367,7 +2348,22 @@
             }
             
             return elements;
-        }
+        },
+        
+        // 添加词典相关方法
+        // 显示词典加载状态信息或兼容模式提示
+        showDictionaryStatus(loadingIndicator, message, needCompatibleTip = true) {
+            if (!loadingIndicator) return;
+            
+            loadingIndicator.textContent = message;
+            
+            // 如果需要显示兼容模式提示，且用户未开启兼容模式
+            if (needCompatibleTip && !userSettings.dictionaryCompatibleMode) {
+                loadingIndicator.textContent += '，可尝试在设置中开启"词典兼容模式"';
+            }
+            
+            loadingIndicator.style.display = 'block';
+        },
     };
     
     // 启动脚本
