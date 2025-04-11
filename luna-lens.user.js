@@ -1,12 +1,12 @@
 // ==UserScript==
 // @name         LunaLens
 // @namespace    http://tampermonkey.net/
-// @version      0.1.4
+// @version      0.1.5
 // @description  通过HTTP API连接LunaTranslator实现浏览器上的原文的分词、翻译、朗读和查词功能 
-// @author       You
+// @author       Raindrop213
 // @match        *://*/*
 // @grant        GM_xmlhttpRequest
-// @connect      127.0.0.1
+// @connect      *
 // ==/UserScript==
 
 (function() {
@@ -16,6 +16,7 @@
     const LUNA_DEFAULT_SETTINGS = {
         language: 'zh', // 默认使用中文
         apiUrl: 'http://127.0.0.1:2333',
+        translationToggle: true,
         showTranslationsAbove: false,
         verticalPreference: false,
         scrollToParagraph: true,
@@ -23,6 +24,7 @@
         readActiveWord: true,
         messageToggle: true,
         dictionaryCompatibleMode: false,
+        copyMode: false,
 
         sentenceDelimiters: '。．.!?！？…',
         sentenceThreshold: 20,
@@ -391,6 +393,7 @@
                     advanced: "Advanced",
                     language: "Interface Language:",
                     serverUrl: "Server URL:",
+                    translationToggle: "Translation Toggle",
                     WindowStyle: "Window Style:",
                     showTranslationsAbove: "Show Translation Above",
                     verticalPreference: "Vertical Writing Mode",
@@ -411,6 +414,7 @@
                     others: "Others",
                     messageToggle: "Show Message",
                     dictionaryCompatibleMode: "Dictionary Compatible Mode",
+                    copyMode: "Copy Mode (without Mecab)",
                     settingsSaved: "Settings saved √",
                     refreshNow: "Refresh Now",
                     refreshLater: "Later",
@@ -443,6 +447,7 @@
                     advanced: "高级",
                     serverUrl: "服务器:",
                     language: "界面语言:",
+                    translationToggle: "翻译开关",
                     WindowStyle: "窗口样式:",
                     showTranslationsAbove: "翻译置于前面",
                     verticalPreference: "垂直排版模式",
@@ -463,6 +468,7 @@
                     others: "其他:",
                     messageToggle: "显示消息",
                     dictionaryCompatibleMode: "词典兼容模式",
+                    copyMode: "复制器模式（不分词查词）",
                     settingsSaved: "设置已保存√",
                     refreshNow: "立即刷新",
                     refreshLater: "稍后刷新",
@@ -516,6 +522,10 @@
                         <div class="luna-settings-row">
                             <label>${PANEL_TEXT[lang].WindowStyle}</label>
                             <div class="luna-toggle">
+                                <input type="checkbox" id="luna-translation-toggle" ${userSettings.translationToggle ? 'checked' : ''}>
+                                <label for="luna-translation-toggle">${PANEL_TEXT[lang].translationToggle}</label>
+                            </div>
+                            <div class="luna-toggle">
                                 <input type="checkbox" id="luna-show-translations-above" ${userSettings.showTranslationsAbove ? 'checked' : ''}>
                                 <label for="luna-show-translations-above">${PANEL_TEXT[lang].showTranslationsAbove}</label>
                             </div>
@@ -548,6 +558,10 @@
                             <div class="luna-toggle">
                                 <input type="checkbox" id="luna-dictionary-compatible-mode" ${userSettings.dictionaryCompatibleMode ? 'checked' : ''}>
                                 <label for="luna-dictionary-compatible-mode">${PANEL_TEXT[lang].dictionaryCompatibleMode}</label>
+                            </div>
+                            <div class="luna-toggle">
+                                <input type="checkbox" id="luna-copy-mode" ${userSettings.copyMode ? 'checked' : ''}>
+                                <label for="luna-copy-mode">${PANEL_TEXT[lang].copyMode}</label>
                             </div>
                         </div>
                     </div>
@@ -756,6 +770,7 @@
                 const newSettings = {
                     language: document.getElementById('luna-language').value,
                     apiUrl: document.getElementById('luna-url').value,
+                    translationToggle: document.getElementById('luna-translation-toggle').checked,
                     showTranslationsAbove: document.getElementById('luna-show-translations-above').checked,
                     verticalPreference: document.getElementById('luna-vertical-preference').checked,
                     scrollToParagraph: document.getElementById('luna-scroll-to-paragraph').checked,
@@ -763,6 +778,7 @@
                     readActiveWord: document.getElementById('luna-read-active-word').checked,
                     messageToggle: document.getElementById('luna-message-toggle').checked,
                     dictionaryCompatibleMode: document.getElementById('luna-dictionary-compatible-mode').checked,
+                    copyMode: document.getElementById('luna-copy-mode').checked,
                     
                     sentenceDelimiters: document.getElementById('luna-sentence-delimiters').value,
                     sentenceThreshold: parseInt(document.getElementById('luna-sentence-threshold').value, 10),
@@ -1150,8 +1166,11 @@
             // 获取所有句子元素
             const sentences = container.querySelectorAll('.luna-sentence');
             
-            // 一次性处理所有句子的分词，而不是逐句处理
-            this.tokenizeAllSentences(container, sentences);
+            // 如果不是复制模式，才进行分词处理
+            if (!userSettings.copyMode) {
+                // 一次性处理所有句子的分词，而不是逐句处理
+                this.tokenizeAllSentences(container, sentences);
+            }
             
             // 为每个句子添加事件处理
             sentences.forEach(sentence => {
@@ -1167,7 +1186,8 @@
                             this.readText(this.getTextWithoutRuby(sentence), sentence);
                         }
                     }
-                    else if (e.ctrlKey && e.button === 0) {
+                    else if ((userSettings.copyMode && e.button === 0) || (e.ctrlKey && e.button === 0)) {
+                        // 复制模式下左键直接复制，非复制模式下需要按Ctrl+左键
                         // 阻止事件冒泡，防止触发段落复制
                         e.stopPropagation();
                         e.preventDefault();
@@ -1193,7 +1213,8 @@
                 if (e.button === 1) { // 中键朗读整个段落
                     this.readText(this.getTextWithoutRuby(container), container);
                 }
-                else if (e.ctrlKey && e.button === 0) {
+                else if ((userSettings.copyMode && e.button === 0) || (e.ctrlKey && e.button === 0)) {
+                    // 复制模式下左键直接复制，非复制模式下需要按Ctrl+左键
                     navigator.clipboard.writeText(this.getTextWithoutRuby(container))
                         .then(() => utils.showMessage(this.getTextWithoutRuby(container)))
                         .catch(err => utils.showMessage('复制失败'));
@@ -1966,8 +1987,11 @@
                 return false;
             });
             
-            this.createTranslation(element);
-            this.translate(this.getTextWithoutRuby(element));
+            // 仅当翻译开关打开时才创建翻译
+            if (userSettings.translationToggle) {
+                this.createTranslation(element);
+                this.translate(this.getTextWithoutRuby(element));
+            }
             
             // 如果开启了朗读激活段落，或者在自动播放模式下，则朗读整个段落
             if (userSettings.readActiveParagraph || state.autoPlayMode) {
