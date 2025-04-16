@@ -7,7 +7,8 @@
 // @match        *://*/*
 // @grant        GM_xmlhttpRequest
 // @connect      127.0.0.1
-// @run-at       document-idle
+// @updateURL    https://github.com/username/LunaLens/raw/main/luna-lens.meta.js
+// @downloadURL  https://github.com/username/LunaLens/raw/main/luna-lens.user.js
 // ==/UserScript==
 
 (function() {
