@@ -21,5 +21,29 @@ LunaLens是一个专为移动端小说阅读设计的油猴脚本，通过连接
    - [下载LunaTranslator](https://github.com/HIllya51/LunaTranslator)
    - 启用HTTP网络服务（默认端口2333）
 
+4. ※重点：设置服务端
+
+   - 填写你的服务器地址，@connect和API_URL都要修改
+
+      ```
+      // ==UserScript==
+      // @name         LunaLens
+      // @namespace    http://tampermonkey.net/
+      // @author       Raindrop213
+      // @match        *://*/*
+      // @connect      127.0.0.1
+      // ==/UserScript==
+
+      (function() {
+         'use strict';
+
+         // 默认配置
+         const CONFIG = {
+            API_URL: 'http://127.0.0.1:2333',
+            ...
+         }
+      })
+```
+
 ## 🛠 旧版本视频演示 backup/luna-lens-018.js 
 https://github.com/user-attachments/assets/067eb4b1-cad0-42ad-b00f-bebb942579ab

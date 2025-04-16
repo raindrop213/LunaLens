@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LunaLens
 // @namespace    http://tampermonkey.net/
-// @version      0.2.0
+// @version      0.2.1
 // @description  通过HTTP API连接LunaTranslator实现浏览器上的原文的分词、翻译、朗读和查词功能 
 // @author       Raindrop213
 // @match        *://*/*
@@ -245,7 +245,7 @@
                 border-bottom: 1px solid #e0e6f5;
                 font-size: 13px;
                 line-height: 1.5;
-                max-height: 20vh;
+                max-height: 15vh;
                 overflow-y: auto;
             }
             .lunalens-translator-item {
