@@ -10,7 +10,7 @@ LunaLens是一个专为移动端小说阅读设计的油猴脚本，通过连接
 
 ## 🛠 视频演示
 
-https://github.com/user-attachments/assets/daf330d6-85da-4ad0-bb9d-8926366a3714
+https://github.com/user-attachments/assets/b362eb4a-abd0-4656-bf73-b5e7f14f41d9
 
 ## 📥 安装指南
 
