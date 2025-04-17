@@ -26,28 +26,7 @@ https://github.com/user-attachments/assets/daf330d6-85da-4ad0-bb9d-8926366a3714
    - 启用HTTP网络服务（默认端口2333）
 
 4. ※重点：设置服务端
-
-   - 填写你的服务器地址，@connect和API_URL都要修改
-
-      ```
-      // ==UserScript==
-      // @name         LunaLens
-      // @namespace    http://tampermonkey.net/
-      // @author       Raindrop213
-      // @match        *://*/*
-      // @connect      127.0.0.1
-      // ==/UserScript==
-
-      (function() {
-         'use strict';
-
-         // 默认配置
-         const CONFIG = {
-            API_URL: 'http://127.0.0.1:2333',
-            ...
-         }
-      })
-      ```
+   - 填写你的服务器地址API_URL。（局域网ip的话需要设备与服务器出在同一个网段下，既换成对应的wifi）
 
 ## 🛠 旧版本视频演示 backup/luna-lens-018.js 
 https://github.com/user-attachments/assets/067eb4b1-cad0-42ad-b00f-bebb942579ab
