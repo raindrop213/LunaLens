@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LunaLens
 // @namespace    http://tampermonkey.net/
-// @version      0.2.2
+// @version      0.2.3
 // @description  通过HTTP API连接LunaTranslator实现浏览器上的原文的分词、翻译、朗读和查词功能 
 // @author       Raindrop213
 // @match        *://*/*
@@ -52,7 +52,7 @@
         // 是否打开设置栏
         SETTING_DISPLAY: false,
         BUTTON_TEXT: {
-            TTS: {true: 'TTS:开', false: 'TTS:关'},
+            TTS: {true: 'TTS', false: 'TTS:自动'},
             TRANSLATION: {true: '翻译:开', false: '翻译:关'},
             DISPLAY: {true: '句子', false: '段落'}
         },
@@ -122,7 +122,7 @@
             justify-content: space-between;
             background: #ffffff;
             border-bottom: 1px solid #ddd;
-            height: 36px;
+            height: 40px;
         }
         .lunalens-title {
             font-size: 16px;
@@ -150,18 +150,26 @@
             align-items: center;
             justify-content: center;
         }
-        .lunalens-setting-toggle {
-            background-color:rgb(146, 146, 146);
+        .lunalens-square-button {
+            width: 40px;
             color: white;
-            font-weight: bold;
+            border: none;
+            border-radius: 0;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            margin: 0;
+        }
+        .lunalens-setting-toggle {
+            background-color: #929292;
         }
         .lunalens-setting-toggle.active {
-            background-color: #b91a1a;
+            background-color: #1288ab;
         }
         .lunalens-close {
             background-color: #000000;
-            color: white;
-            font-weight: bold;
         }
         .lunalens-dict-context-wrapper {
             position: relative;
@@ -181,7 +189,7 @@
             display: flex;
             padding: 0;
             border-bottom: 1px solid #eee;
-            height: 36px;
+            height: 40px;
         }
         .lunalens-dict-query-input {
             flex: 1;
@@ -198,30 +206,10 @@
             border: 1px solid #000000;
         }
         .lunalens-dict-query-button {
-            width: 36px;
             background: #23ab12;
-            color: white;
-            border: none;
-            border-radius: 0;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
-            margin: 0;
         }
         .lunalens-tts-button {
-            width: 36px;
             background: #a51dd1;
-            color: white;
-            border: none;
-            border-radius: 0;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
-            margin: 0;
         }
         .lunalens-context-tts-button {
             position: absolute;
@@ -794,8 +782,8 @@
                     <span class="lunalens-header-button lunalens-context-toggle" title="切换句子/段落">
                         ${CONFIG.BUTTON_TEXT.DISPLAY[CONFIG.DISPLAY_SENTENCE_MODE]}
                     </span>
-                    <span class="lunalens-header-button lunalens-setting-toggle" title="设置">⚙</span>
-                    <span class="lunalens-header-button lunalens-close" title="关闭面板">×</span>
+                    <button class="lunalens-square-button lunalens-setting-toggle" title="设置">⚙</button>
+                    <button class="lunalens-square-button lunalens-close" title="关闭面板">×</button>
                 </div>
             </div>
             <div class="lunalens-dict-window">
@@ -806,8 +794,8 @@
                 <div class="lunalens-translation"></div>
                 <div class="lunalens-dict-query-box">
                     <input type="text" class="lunalens-dict-query-input" placeholder="输入要查询的单词">
-                    <button class="lunalens-dict-query-button">+</button>
-                    <button class="lunalens-tts-button" title="朗读单词">♬</button>
+                    <button class="lunalens-square-button lunalens-dict-query-button">+</button>
+                    <button class="lunalens-square-button lunalens-tts-button" title="朗读单词">♬</button>
                 </div>
                 <div class="lunalens-dict-content">
                     <div class="lunalens-dict-tabs"></div>
@@ -1272,6 +1260,13 @@
         const requestId = Date.now();
         element.dataset.requestId = requestId;
         
+        // 如果TTS功能开启，尝试朗读文本
+        if (CONFIG.TTS_ENABLED) {
+            const plainText = getPlainText(originalContent);
+            // 使用重构后的TTS朗读功能
+            readText(plainText);
+        }
+        
         // 处理文本并添加分词标记
         processTextWithTokenization(originalContent, html => {
             // 如果元素已经不是当前激活的元素或者请求ID不匹配，则不更新内容
@@ -1325,14 +1320,6 @@
                     lookupWord(wordText);
                 });
             });
-            
-            // 如果TTS功能开启，激活元素后自动朗读段落
-            if (CONFIG.TTS_ENABLED) {
-                // 获取纯文本内容
-                const plainText = getPlainText(element.innerHTML);
-                // 朗读文本
-                readText(plainText, element);
-            }
         });
     }
 
@@ -1885,7 +1872,50 @@
         // 停止之前的朗读
         stopReading();
         
-        // 发送朗读请求
+        
+        // 检测设备类型并使用适当的播放方法
+        if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+            // 在移动设备上直接使用Audio元素和原始URL
+            playWithDirectUrl(text);
+        } else {
+            // 在桌面设备上使用ArrayBuffer加音频解码
+            fetchAndPlayTTS(text);
+        }
+        
+        return true;
+    }
+    
+    
+    // 直接通过URL播放（适用于移动设备）
+    function playWithDirectUrl(text) {
+        const audio = new Audio();
+        audio.src = `${CONFIG.API_URL}/api/tts?text=${encodeURIComponent(text)}`;
+        
+        currentAudio = {
+            element: audio,
+            pause: function() {
+                try {
+                    this.element.pause();
+                } catch(e) {
+                    console.error('停止播放失败:', e);
+                }
+            }
+        };
+        
+        audio.onended = () => {
+            currentAudio = null;
+        };
+        
+        audio.onerror = (e) => {
+            console.error('音频播放失败:', e);
+            currentAudio = null;
+        };
+        
+        audio.play().catch(e => console.error('播放启动失败:', e));
+    }
+    
+    // 获取并播放TTS（适用于桌面设备）
+    function fetchAndPlayTTS(text) {
         GM_xmlhttpRequest({
             method: 'GET',
             url: `${CONFIG.API_URL}/api/tts?text=${encodeURIComponent(text)}`,
@@ -1893,68 +1923,99 @@
             timeout: CONFIG.TIMEOUT,
             onload: response => {
                 if (response.status >= 200 && response.status < 300) {
-                    playAudioBlob(response.response);
+                    if (response.response && response.response.byteLength > 0) {
+                        playAudioBlob(response.response);
+                    } else {
+                        console.error('TTS响应为空');
+                        playWithDirectUrl(text);
+                    }
                 } else {
                     console.error('TTS请求失败! 状态:', response.status);
+                    playWithDirectUrl(text);
                 }
             },
             onerror: error => {
                 console.error('TTS请求失败:', error);
+                playWithDirectUrl(text);
             },
             ontimeout: () => {
                 console.error('TTS请求超时');
+                playWithDirectUrl(text);
             }
         });
-        return true;
     }
     
     // 停止朗读
     function stopReading() {
-        if (currentAudio) {
+        if (!currentAudio) return;
+        
+        try {
             currentAudio.pause();
-            if (currentAudio.src) {
-                URL.revokeObjectURL(currentAudio.src);
+            
+            // 释放资源
+            if (currentAudio.source && currentAudio.context) {
+                try {
+                    currentAudio.source.stop();
+                    currentAudio.context.close();
+                } catch(e) {}
             }
+        } catch(e) {
+            console.error('停止播放时出错:', e);
+        } finally {
             currentAudio = null;
         }
     }
     
-    // 播放音频数据
+    // 播放音频数据（仅用于桌面设备）
     function playAudioBlob(arrayBuffer) {
         // 停止之前的朗读
         stopReading();
         
         try {
-            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            
-            audioContext.decodeAudioData(arrayBuffer, 
-                (buffer) => {
-                    const source = audioContext.createBufferSource();
-                    source.buffer = buffer;
-                    source.connect(audioContext.destination);
-                    
-                    currentAudio = {
-                        source: source,
-                        context: audioContext,
-                        pause: function() {
-                            try {
-                                this.source.stop();
-                                this.context.close();
-                            } catch(e) {}
-                        }
-                    };
-                    
-                    source.onended = () => {
-                        audioContext.close().catch(() => {});
-                        currentAudio = null;
-                    };
-                    
-                    source.start(0);
-                },
-                () => console.error('音频播放失败')
-            );
+            // 尝试使用AudioContext播放
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            if (AudioContext) {
+                const audioContext = new AudioContext();
+                
+                audioContext.decodeAudioData(
+                    arrayBuffer, 
+                    (buffer) => {
+                        const source = audioContext.createBufferSource();
+                        source.buffer = buffer;
+                        source.connect(audioContext.destination);
+                        
+                        currentAudio = {
+                            source: source,
+                            context: audioContext,
+                            pause: function() {
+                                try {
+                                    this.source.stop();
+                                    this.context.close();
+                                } catch(e) {}
+                            }
+                        };
+                        
+                        source.onended = () => {
+                            audioContext.close().catch(() => {});
+                            currentAudio = null;
+                        };
+                        
+                        source.start(0);
+                    },
+                    (error) => {
+                        console.error('音频解码失败:', error);
+                        // 解码失败时尝试直接URL方式
+                        playWithDirectUrl(lastSpokenText);
+                    }
+                );
+            } else {
+                // 如果不支持AudioContext，使用直接URL方式
+                playWithDirectUrl(lastSpokenText);
+            }
         } catch (e) {
             console.error('音频播放失败:', e);
+            // 出错时尝试直接URL方式
+            playWithDirectUrl(lastSpokenText);
         }
     }
 })();

@@ -1,12 +1,12 @@
 // ==UserScript==
 // @name         LunaLens
 // @namespace    http://tampermonkey.net/
-// @version      0.2.2
+// @version      0.2.1
 // @description  通过HTTP API连接LunaTranslator实现浏览器上的原文的分词、翻译、朗读和查词功能 
 // @author       Raindrop213
 // @match        *://*/*
 // @grant        GM_xmlhttpRequest
-// @connect      *
+// @connect      127.0.0.1
 // @updateURL    https://github.com/raindrop213/LunaLens/raw/main/luna-lens.meta.js
 // @downloadURL  https://github.com/raindrop213/LunaLens/raw/main/luna-lens.user.js
 // ==/UserScript==
@@ -15,8 +15,8 @@
     'use strict';
 
     // 默认配置
-    const DEFAULT_CONFIG = {
-        // ※重点：填写你的服务器地址，同步设置@connect如： @connect 192.168.6.229
+    const CONFIG = {
+        // ※重点：填写你的服务器地址，记得上面要多加一个@connect如： @connect 192.168.6.229
         API_URL: 'http://127.0.0.1:2333',
 
         // 分句设置
@@ -32,9 +32,9 @@
 
         // 选择器设置
         // 选择的标签
-        INCLUDE_TAGS: 'p, h1, h2, h3, h4, h5, h6',
+        INCLUDE_SELECTORS: 'p, h1, h2, h3, h4, h5, h6',
         // 排除的标签
-        EXCLUDE_TAGS: '',
+        EXCLUDE_SELECTORS: '',
         // 包含的class id
         INCLUDE_CLASS_IDS: '',
         // 排除的class id
@@ -61,9 +61,6 @@
         // API请求等待的最大时限
         TIMEOUT: 10000
     };
-    
-    // 当前配置，初始化为默认配置的副本
-    const CONFIG = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
 
     // 面板样式
     const STYLE =  `
@@ -91,8 +88,8 @@
             font-size: 0.7em;
             color: #b91a1a;
         }
-        /* LunaLens面板 */
-        .lunalens-panel {
+        /* 常驻词典样式 */
+        #lunalens-panel {
             position: fixed;
             bottom: 0;
             left: 0;
@@ -110,12 +107,8 @@
             writing-mode: horizontal-tb !important;
             -webkit-writing-mode: horizontal-tb !important;
         }
-        .lunalens-panel.visible {
+        #lunalens-panel.visible {
             transform: translateY(0);
-        }
-        .lunalens-panel input::placeholder {
-            color: #aaa;
-            opacity: 0.8;
         }
         .lunalens-header {
             display: flex;
@@ -331,63 +324,60 @@
             display: flex;
         }
         .lunalens-setting-api-url {
-            padding: 8px 10px;
-            border-bottom: 1px solid #eee;
+            margin-bottom: 15px;
+            padding: 10px;
+            background-color: #f5f5f5;
+            border-radius: 4px;
         }
         .lunalens-setting-api-url label {
             display: block;
             margin-bottom: 5px;
             font-weight: bold;
-            font-size: 13px;
             color: #333;
         }
         .lunalens-setting-api-url input {
             width: 100%;
-            padding: 6px 10px;
+            padding: 8px;
             border: 1px solid #ddd;
-            border-radius: 0;
+            border-radius: 3px;
             font-size: 14px;
-            outline: none;
-            box-sizing: border-box;
-        }
-        .lunalens-setting-api-url input:focus {
-            border: 1px solid #000000;
         }
         .lunalens-setting-tabs {
             display: flex;
-            flex-direction: row;
-            background: #f9f9f9;
-            overflow-x: auto;
-            white-space: nowrap;
+            border-bottom: 1px solid #ddd;
+            margin-bottom: 10px;
         }
         .lunalens-setting-tab {
             padding: 8px 15px;
             cursor: pointer;
-            border-right: 1px solid #eee;
-            font-size: 13px;
+            border: 1px solid transparent;
+            border-bottom: none;
+            margin-right: 5px;
+            border-radius: 4px 4px 0 0;
+            background-color: #f1f1f1;
         }
         .lunalens-setting-tab.active {
-            background: #fff;
+            background-color: #fff;
+            border-color: #ddd;
+            margin-bottom: -1px;
+            border-bottom: 1px solid #fff;
             font-weight: bold;
-            border-top: 3px solid #b91a1a;
-            border-bottom: none;
-            border-left: none;
-        }
-        .lunalens-setting-contents {
-            flex: 1;
-            overflow-y: auto;
         }
         .lunalens-setting-content {
             display: none;
+            flex: 1;
+            overflow-y: auto;
             padding: 10px;
-            border-top: none;
+            border: 1px solid #eee;
+            border-radius: 0 0 4px 4px;
         }
         .lunalens-setting-content.active {
             display: block;
         }
         .lunalens-setting-item {
             margin-bottom: 12px;
-            padding-bottom: 8px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #f0f0f0;
         }
         .lunalens-setting-item:last-child {
             border-bottom: none;
@@ -396,18 +386,12 @@
             display: block;
             margin-bottom: 5px;
             font-weight: bold;
-            font-size: 13px;
         }
         .lunalens-setting-item input[type="text"] {
             width: 100%;
-            padding: 6px 10px;
+            padding: 6px;
             border: 1px solid #ddd;
-            border-radius: 0;
-            outline: none;
-            box-sizing: border-box;
-        }
-        .lunalens-setting-item input[type="text"]:focus {
-            border: 1px solid #000000;
+            border-radius: 3px;
         }
         .lunalens-setting-item input[type="checkbox"] {
             margin-right: 8px;
@@ -418,32 +402,17 @@
             color: #666;
             margin-top: 5px;
         }
-        .lunalens-setting-description kbd {
-            background-color:rgba(223, 223, 223, 0.5);
-            padding: 0px 3px;
-            border-radius: 3px;
-        }
         .lunalens-setting-button {
-            background-color: #23ab12;
+            background-color: #4CAF50;
             color: white;
             border: none;
             padding: 8px 16px;
             cursor: pointer;
-            border-radius: 0;
+            border-radius: 3px;
             margin-top: 10px;
-            font-size: 14px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            align-self: flex-start;
-            margin-right: 10px;
         }
-        .lunalens-reset-settings {
-            background-color: #cc3333;
-        }
-        .lunalens-setting-buttons {
-            display: flex;
-            flex-direction: row;
+        .lunalens-setting-button:hover {
+            background-color: #45a049;
         }
         .lunalens-toast {
             position: fixed;
@@ -562,22 +531,26 @@
                     } catch (e) {
                         console.error('解析API响应失败:', e);
                         showToast('分词API请求失败，请检查API连接', true);
+                        showSettingsPanel();
                         callback(null);
                     }
                 } else {
                     console.error('API请求失败:', response.status);
                     showToast('API请求失败，HTTP状态码: ' + response.status, true);
+                    showSettingsPanel();
                     callback(null);
                 }
             },
             onerror: function(error) {
                 console.error('API请求错误:', error);
                 showToast('分词API请求失败，请检查API连接', true);
+                showSettingsPanel();
                 callback(null);
             },
             ontimeout: function() {
                 console.error('API请求超时');
                 showToast('分词API请求超时', true);
+                showSettingsPanel();
                 callback(null);
             },
             timeout: CONFIG.TIMEOUT
@@ -619,7 +592,6 @@
         processMecabAPI(plainText, function(words) {
             if (!words) {
                 callback(html); // 如果API失败，返回原HTML
-                showSettingsPanel();
                 return;
             }
             
@@ -774,13 +746,13 @@
     // 创建词典面板
     function createDictionaryPanel() {
         // 检查是否已存在
-        if (document.querySelector('.lunalens-panel')) {
-            return document.querySelector('.lunalens-panel');
+        if (document.getElementById('lunalens-panel')) {
+            return document.getElementById('lunalens-panel');
         }
 
         // 创建面板
         const panel = document.createElement('div');
-        panel.className = 'lunalens-panel';
+        panel.id = 'lunalens-panel';
         panel.innerHTML = `
             <div class="lunalens-header">
                 <div class="lunalens-title">LunaLens</div>
@@ -819,69 +791,70 @@
             <div class="lunalens-setting-window">
                 <div class="lunalens-setting-api-url">
                     <label for="lunalens-api-url">API URL:</label>
-                    <input type="text" id="lunalens-api-url" value="${CONFIG.API_URL}" placeholder="例如：http://127.0.0.1:2333">
-                    <div class="lunalens-setting-description">通常为LunaTranslator的网络服务地址</div>
+                    <input type="text" id="lunalens-api-url" value="${CONFIG.API_URL}">
+                    <div class="lunalens-setting-description">API连接地址，通常为LunaTranslator的HTTP服务地址</div>
                 </div>
                 <div class="lunalens-setting-tabs">
                     <div class="lunalens-setting-tab active" data-tab="sentence-settings">分句设置</div>
                     <div class="lunalens-setting-tab" data-tab="selector-settings">选择器设置</div>
-                    <div class="lunalens-setting-tab" data-tab="other-settings">其他设置</div>
                 </div>
                 <div class="lunalens-setting-contents">
                     <div class="lunalens-setting-content active" id="sentence-settings">
                         <div class="lunalens-setting-item">
                             <label for="sentence-delimiters">分句断句符号</label>
-                            <input type="text" id="sentence-delimiters" value="${CONFIG.SENTENCE_DELIMITERS}" placeholder="切分为多个句子单元的符合">
+                            <input type="text" id="sentence-delimiters" value="${CONFIG.SENTENCE_DELIMITERS}">
+                            <div class="lunalens-setting-description">用于分句的标点符号</div>
                         </div>
                         <div class="lunalens-setting-item">
                             <label for="sentence-length">句子字数阈值</label>
-                            <input type="text" id="sentence-length" value="${CONFIG.SENTENCE_LENGTH}" placeholder="防止句子过短而设置的最小句子长度">
+                            <input type="text" id="sentence-length" value="${CONFIG.SENTENCE_LENGTH}">
+                            <div class="lunalens-setting-description">分句的最大字数</div>
                         </div>
                         <div class="lunalens-setting-item">
                             <label for="min-content-length">最小内容长度</label>
-                            <input type="text" id="min-content-length" value="${CONFIG.MIN_CONTENT_LENGTH}" placeholder="过短的文本不会被选中">
+                            <input type="text" id="min-content-length" value="${CONFIG.MIN_CONTENT_LENGTH}">
+                            <div class="lunalens-setting-description">处理内容的最小字数</div>
                         </div>
                         <div class="lunalens-setting-item">
                             <label for="max-content-length">最大内容长度</label>
-                            <input type="text" id="max-content-length" value="${CONFIG.MAX_CONTENT_LENGTH}" placeholder="过长的文本不会被选中">
+                            <input type="text" id="max-content-length" value="${CONFIG.MAX_CONTENT_LENGTH}">
+                            <div class="lunalens-setting-description">处理内容的最大字数</div>
                         </div>
-                        <div class="lunalens-setting-description">※注意：默认去除原句的振假名注音（ruby 中的 rt 和 rp）</div>
                     </div>
                     <div class="lunalens-setting-content" id="selector-settings">
                         <div class="lunalens-setting-item">
-                            <label for="include-tags">包含的标签</label>
-                            <input type="text" id="include-tags" value="${CONFIG.INCLUDE_TAGS}" placeholder="例如：p, h1, h2, h3, h4, h5, h6, div">
+                            <label for="include-selectors">包含的标签</label>
+                            <input type="text" id="include-selectors" value="${CONFIG.INCLUDE_SELECTORS}">
+                            <div class="lunalens-setting-description">指定哪些HTML标签可以被选中处理，多个值用逗号分隔</div>
                         </div>
                         <div class="lunalens-setting-item">
-                            <label for="exclude-tags">排除的标签</label>
-                            <input type="text" id="exclude-tags" value="${CONFIG.EXCLUDE_TAGS}" placeholder="例如： a, img, em, dd, code, button">
+                            <label for="exclude-selectors">排除的标签</label>
+                            <input type="text" id="exclude-selectors" value="${CONFIG.EXCLUDE_SELECTORS}">
+                            <div class="lunalens-setting-description">指定哪些HTML标签不可被选中处理，多个值用逗号分隔</div>
                         </div>
                         <div class="lunalens-setting-item">
                             <label for="include-class-ids">包含的class/id</label>
-                            <input type="text" id="include-class-ids" value="${CONFIG.INCLUDE_CLASS_IDS}" placeholder="例如：.article-content, #main-content">
+                            <input type="text" id="include-class-ids" value="${CONFIG.INCLUDE_CLASS_IDS}">
+                            <div class="lunalens-setting-description">指定哪些class或id可以被选中处理，多个值用逗号分隔</div>
                         </div>
                         <div class="lunalens-setting-item">
                             <label for="exclude-class-ids">排除的class/id</label>
-                            <input type="text" id="exclude-class-ids" value="${CONFIG.EXCLUDE_CLASS_IDS}" placeholder="例如：.sidebar, #ads, .popup, #comments">
+                            <input type="text" id="exclude-class-ids" value="${CONFIG.EXCLUDE_CLASS_IDS}">
+                            <div class="lunalens-setting-description">指定哪些class或id不可被选中处理，多个值用逗号分隔</div>
                         </div>
                         <div class="lunalens-setting-item">
                             <label for="stop-containers">停止容器</label>
-                            <input type="text" id="stop-containers" value="${CONFIG.STOP_CONTAINERS}" placeholder="例如：article, main, section, div.content, div.main-content">
-                        </div>
-                        <div class="lunalens-setting-description">※注意class和id的写法：<br><kbd>class</kbd> 前加 <kbd>.</kbd><br><kbd>id</kbd> 前加 <kbd>#</kbd><br>用逗号分隔</div>
-                        <div class="lunalens-setting-description">如果你看不懂又选不中文本的时候，请试试在第一栏加多个加上 <kbd>div</kbd> 提高选中率</div>
-                    </div>
-                    <div class="lunalens-setting-content" id="other-settings">
-                        <div class="lunalens-setting-item">
-                            <label for="timeout">API请求超时(ms)</label>
-                            <input type="text" id="timeout" value="${CONFIG.TIMEOUT}">
+                            <input type="text" id="stop-containers" value="${CONFIG.STOP_CONTAINERS}">
+                            <div class="lunalens-setting-description">点击元素时停止事件传播的容器选择器</div>
                         </div>
                     </div>
                 </div>
-                <div class="lunalens-setting-buttons">
-                    <button class="lunalens-setting-button lunalens-save-settings">保存设置</button>
-                    <button class="lunalens-setting-button lunalens-reset-settings">重置设置</button>
+                <div class="lunalens-setting-item">
+                    <label for="timeout">API请求超时(ms)</label>
+                    <input type="text" id="timeout" value="${CONFIG.TIMEOUT}">
+                    <div class="lunalens-setting-description">API请求的最大等待时间(毫秒)</div>
                 </div>
+                <button class="lunalens-setting-button lunalens-save-settings">保存设置</button>
             </div>
         `;
         document.body.appendChild(panel);
@@ -953,8 +926,8 @@
             const sentenceLength = parseInt(panel.querySelector('#sentence-length').value) || 50;
             const minContentLength = parseInt(panel.querySelector('#min-content-length').value) || 2;
             const maxContentLength = parseInt(panel.querySelector('#max-content-length').value) || 1000;
-            const includeSelectors = panel.querySelector('#include-tags').value;
-            const excludeSelectors = panel.querySelector('#exclude-tags').value;
+            const includeSelectors = panel.querySelector('#include-selectors').value;
+            const excludeSelectors = panel.querySelector('#exclude-selectors').value;
             const includeClassIds = panel.querySelector('#include-class-ids').value;
             const excludeClassIds = panel.querySelector('#exclude-class-ids').value;
             const stopContainers = panel.querySelector('#stop-containers').value;
@@ -966,8 +939,8 @@
             CONFIG.SENTENCE_LENGTH = sentenceLength;
             CONFIG.MIN_CONTENT_LENGTH = minContentLength;
             CONFIG.MAX_CONTENT_LENGTH = maxContentLength;
-            CONFIG.INCLUDE_TAGS = includeSelectors;
-            CONFIG.EXCLUDE_TAGS = excludeSelectors;
+            CONFIG.INCLUDE_SELECTORS = includeSelectors;
+            CONFIG.EXCLUDE_SELECTORS = excludeSelectors;
             CONFIG.INCLUDE_CLASS_IDS = includeClassIds;
             CONFIG.EXCLUDE_CLASS_IDS = excludeClassIds;
             CONFIG.STOP_CONTAINERS = stopContainers;
@@ -1070,13 +1043,6 @@
 
         // 初始设置翻译区域显示状态
         translationArea.style.display = CONFIG.TRANSLATION_ENABLED ? 'block' : 'none';
-        
-        // 添加重置设置按钮事件处理
-        const resetButton = panel.querySelector('.lunalens-reset-settings');
-        resetButton.addEventListener('click', function() {
-            resetSettings();
-            showToast('设置已重置为默认值', false);
-        });
 
         return panel;
     }
@@ -1366,102 +1332,13 @@
                 e.preventDefault();
                 return;
             }
-        } else if (isElementSelectable(e.target)) {
-            // 检查内容是否为空或只有空白字符
-            const textContent = e.target.textContent.trim();
-            if (textContent.length < CONFIG.MIN_CONTENT_LENGTH || textContent.length > CONFIG.MAX_CONTENT_LENGTH) {
-                return;
-            }
-            
+        } else if (CONFIG.INCLUDE_SELECTORS.split(',').map(s => s.trim()).includes(e.target.tagName.toLowerCase())) {
             e.preventDefault();
             activateElement(e.target);
         } else if (!e.target.closest('.lunalens-panel')) {
             // 只有当点击不在词典面板内时才停用元素
             deactivateElement();
         }
-    }
-    
-    // 判断元素是否符合选择器设置
-    function isElementSelectable(element) {
-        if (!element) return false;
-        
-        const tagName = element.tagName.toLowerCase();
-        
-        // 处理逗号分隔的配置字符串并返回有效的数组
-        function parseConfigList(configString) {
-            return configString.split(',').map(item => item.trim()).filter(Boolean);
-        }
-        
-        // 1. 检查标签是否在包含列表中
-        const includeTags = parseConfigList(CONFIG.INCLUDE_TAGS);
-        if (includeTags.length > 0 && !includeTags.includes(tagName)) {
-            return false;
-        }
-        
-        // 2. 检查标签是否在排除列表中
-        const excludeTags = parseConfigList(CONFIG.EXCLUDE_TAGS);
-        if (excludeTags.length > 0 && excludeTags.includes(tagName)) {
-            return false;
-        }
-        
-        // 3. 检查class和id是否在包含列表中
-        const includeClassIds = parseConfigList(CONFIG.INCLUDE_CLASS_IDS);
-        if (includeClassIds.length > 0) {
-            let matched = false;
-            for (const selector of includeClassIds) {
-                if (selector.startsWith('.') && element.classList.contains(selector.substring(1))) {
-                    matched = true;
-                    break;
-                } else if (selector.startsWith('#') && element.id === selector.substring(1)) {
-                    matched = true;
-                    break;
-                }
-            }
-            if (!matched) return false;
-        }
-        
-        // 4. 检查class和id是否在排除列表中
-        const excludeClassIds = parseConfigList(CONFIG.EXCLUDE_CLASS_IDS);
-        if (excludeClassIds.length > 0) {
-            for (const selector of excludeClassIds) {
-                if (selector.startsWith('.') && element.classList.contains(selector.substring(1))) {
-                    return false;
-                } else if (selector.startsWith('#') && element.id === selector.substring(1)) {
-                    return false;
-                }
-            }
-        }
-        
-        // 5. 检查是否在停止容器内
-        const stopContainers = parseConfigList(CONFIG.STOP_CONTAINERS);
-        if (stopContainers.length > 0) {
-            for (const selector of stopContainers) {
-                let closestContainer = null;
-                
-                try {
-                    closestContainer = element.closest(selector);
-                } catch (e) {
-                    console.error(`无效的选择器: ${selector}`, e);
-                }
-                
-                if (closestContainer) {
-                    // 如果元素本身就是停止容器，允许选择
-                    if (closestContainer === element) {
-                        return true;
-                    }
-                    
-                    // 如果元素在停止容器内，需要确保它不是深层嵌套的
-                    const parentContainer = element.parentElement.closest(selector);
-                    if (!parentContainer || parentContainer === closestContainer) {
-                        return true;
-                    }
-                    
-                    return false;
-                }
-            }
-        }
-        
-        return true;
     }
 
     // 处理iframe
@@ -1551,8 +1428,8 @@
             SENTENCE_LENGTH: CONFIG.SENTENCE_LENGTH,
             MIN_CONTENT_LENGTH: CONFIG.MIN_CONTENT_LENGTH,
             MAX_CONTENT_LENGTH: CONFIG.MAX_CONTENT_LENGTH,
-            INCLUDE_TAGS: CONFIG.INCLUDE_TAGS,
-            EXCLUDE_TAGS: CONFIG.EXCLUDE_TAGS,
+            INCLUDE_SELECTORS: CONFIG.INCLUDE_SELECTORS,
+            EXCLUDE_SELECTORS: CONFIG.EXCLUDE_SELECTORS,
             INCLUDE_CLASS_IDS: CONFIG.INCLUDE_CLASS_IDS,
             EXCLUDE_CLASS_IDS: CONFIG.EXCLUDE_CLASS_IDS,
             STOP_CONTAINERS: CONFIG.STOP_CONTAINERS,
@@ -1598,8 +1475,8 @@
                     updateField('sentence-length', CONFIG.SENTENCE_LENGTH);
                     updateField('min-content-length', CONFIG.MIN_CONTENT_LENGTH);
                     updateField('max-content-length', CONFIG.MAX_CONTENT_LENGTH);
-                    updateField('include-tags', CONFIG.INCLUDE_TAGS);
-                    updateField('exclude-tags', CONFIG.EXCLUDE_TAGS);
+                    updateField('include-selectors', CONFIG.INCLUDE_SELECTORS);
+                    updateField('exclude-selectors', CONFIG.EXCLUDE_SELECTORS);
                     updateField('include-class-ids', CONFIG.INCLUDE_CLASS_IDS);
                     updateField('exclude-class-ids', CONFIG.EXCLUDE_CLASS_IDS);
                     updateField('stop-containers', CONFIG.STOP_CONTAINERS);
@@ -1627,57 +1504,6 @@
             console.error('加载设置失败:', e);
         }
     }
-    
-    // 重置设置为默认值
-    function resetSettings() {
-        // 从DEFAULT_CONFIG复制所有属性到CONFIG
-        Object.keys(DEFAULT_CONFIG).forEach(key => {
-            CONFIG[key] = DEFAULT_CONFIG[key];
-        });
-        
-        // 更新UI上的设置值
-        if (dictionaryPanel) {
-            const panel = dictionaryPanel;
-            
-            // 更新基本设置
-            const updateField = (id, value) => {
-                const field = panel.querySelector(`#${id}`);
-                if (field) field.value = value;
-            };
-            
-            updateField('lunalens-api-url', CONFIG.API_URL);
-            updateField('sentence-delimiters', CONFIG.SENTENCE_DELIMITERS);
-            updateField('sentence-length', CONFIG.SENTENCE_LENGTH);
-            updateField('min-content-length', CONFIG.MIN_CONTENT_LENGTH);
-            updateField('max-content-length', CONFIG.MAX_CONTENT_LENGTH);
-            updateField('include-tags', CONFIG.INCLUDE_TAGS);
-            updateField('exclude-tags', CONFIG.EXCLUDE_TAGS);
-            updateField('include-class-ids', CONFIG.INCLUDE_CLASS_IDS);
-            updateField('exclude-class-ids', CONFIG.EXCLUDE_CLASS_IDS);
-            updateField('stop-containers', CONFIG.STOP_CONTAINERS);
-            updateField('timeout', CONFIG.TIMEOUT);
-            
-            // 更新顶栏按钮状态
-            panel.querySelector('.lunalens-context-toggle').textContent = 
-                CONFIG.BUTTON_TEXT.DISPLAY[CONFIG.DISPLAY_SENTENCE_MODE];
-            
-            panel.querySelector('.lunalens-translation-toggle').textContent = 
-                CONFIG.BUTTON_TEXT.TRANSLATION[CONFIG.TRANSLATION_ENABLED];
-            panel.querySelector('.lunalens-translation-toggle').classList.toggle('active', CONFIG.TRANSLATION_ENABLED);
-            
-            panel.querySelector('.lunalens-auto-tts-toggle').textContent = 
-                CONFIG.BUTTON_TEXT.TTS[CONFIG.TTS_ENABLED];
-            panel.querySelector('.lunalens-auto-tts-toggle').classList.toggle('active', CONFIG.TTS_ENABLED);
-            
-            // 显示/隐藏翻译区域
-            if (translationArea) {
-                translationArea.style.display = CONFIG.TRANSLATION_ENABLED ? 'block' : 'none';
-            }
-        }
-        
-        // 从本地存储中移除保存的设置
-        localStorage.removeItem('lunalens_settings');
-    }
 
     // 查词典并显示结果
     function lookupWord(word) {
@@ -1687,7 +1513,7 @@
         currentWord = word;
 
         // 获取词典面板
-        const panel = document.querySelector('.lunalens-panel');
+        const panel = document.getElementById('lunalens-panel');
         if (!panel) return;
 
         const tabsContainer = panel.querySelector('.lunalens-dict-tabs');
