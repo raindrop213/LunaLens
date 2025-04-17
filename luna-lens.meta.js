@@ -6,7 +6,7 @@
 // @author       Raindrop213
 // @match        *://*/*
 // @grant        GM_xmlhttpRequest
-// @connect      127.0.0.1
+// @connect      *
 // @updateURL    https://github.com/raindrop213/LunaLens/raw/main/luna-lens.meta.js
 // @downloadURL  https://github.com/raindrop213/LunaLens/raw/main/luna-lens.user.js
 // ==/UserScript==
