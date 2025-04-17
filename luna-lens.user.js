@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LunaLens
 // @namespace    http://tampermonkey.net/
-// @version      0.2.3
+// @version      0.2.4
 // @description  通过HTTP API连接LunaTranslator实现浏览器上的原文的分词、翻译、朗读和查词功能 
 // @author       Raindrop213
 // @match        *://*/*
@@ -48,11 +48,11 @@
         // 是否打开翻译
         TRANSLATION_ENABLED: false,
         // 是否激活标签就自动朗读
-        TTS_ENABLED: false,
+        TTS_AUTO: false,
         // 是否打开设置栏
         SETTING_DISPLAY: false,
         BUTTON_TEXT: {
-            TTS: {true: 'TTS', false: 'TTS:自动'},
+            TTS: {true: 'TTS:自动', false: 'TTS'},
             TRANSLATION: {true: '翻译:开', false: '翻译:关'},
             DISPLAY: {true: '句子', false: '段落'}
         },
@@ -774,7 +774,7 @@
                 <div class="lunalens-title">LunaLens</div>
                 <div class="lunalens-header-buttons">
                     <span class="lunalens-header-button lunalens-auto-tts-toggle" title="自动朗读开关">
-                        ${CONFIG.BUTTON_TEXT.TTS[CONFIG.TTS_ENABLED]}
+                        ${CONFIG.BUTTON_TEXT.TTS[CONFIG.TTS_AUTO]}
                     </span>
                     <span class="lunalens-header-button lunalens-translation-toggle" title="切换翻译功能">
                         ${CONFIG.BUTTON_TEXT.TRANSLATION[CONFIG.TRANSLATION_ENABLED]}
@@ -1018,9 +1018,9 @@
         
         // 切换TTS功能
         ttsToggle.addEventListener('click', function() {
-            CONFIG.TTS_ENABLED = !CONFIG.TTS_ENABLED;
-            this.textContent = CONFIG.BUTTON_TEXT.TTS[CONFIG.TTS_ENABLED];
-            this.classList.toggle('active', CONFIG.TTS_ENABLED);
+            CONFIG.TTS_AUTO = !CONFIG.TTS_AUTO;
+            this.textContent = CONFIG.BUTTON_TEXT.TTS[CONFIG.TTS_AUTO];
+            this.classList.toggle('active', CONFIG.TTS_AUTO);
             
             // 保存设置到本地存储
             saveSettings();
@@ -1261,10 +1261,12 @@
         element.dataset.requestId = requestId;
         
         // 如果TTS功能开启，尝试朗读文本
-        if (CONFIG.TTS_ENABLED) {
+        if (CONFIG.TTS_AUTO) {
             const plainText = getPlainText(originalContent);
-            // 使用重构后的TTS朗读功能
-            readText(plainText);
+            setTimeout(() => {
+                // 使用重构后的TTS朗读功能
+                readText(plainText);
+            }, 50);
         }
         
         // 处理文本并添加分词标记
@@ -1546,7 +1548,7 @@
             TIMEOUT: CONFIG.TIMEOUT,
             DISPLAY_SENTENCE_MODE: CONFIG.DISPLAY_SENTENCE_MODE,
             TRANSLATION_ENABLED: CONFIG.TRANSLATION_ENABLED,
-            TTS_ENABLED: CONFIG.TTS_ENABLED
+            TTS_AUTO: CONFIG.TTS_AUTO
         };
         
         try {
@@ -1601,8 +1603,8 @@
                     panel.querySelector('.lunalens-translation-toggle').classList.toggle('active', CONFIG.TRANSLATION_ENABLED);
                     
                     panel.querySelector('.lunalens-auto-tts-toggle').textContent = 
-                        CONFIG.BUTTON_TEXT.TTS[CONFIG.TTS_ENABLED];
-                    panel.querySelector('.lunalens-auto-tts-toggle').classList.toggle('active', CONFIG.TTS_ENABLED);
+                        CONFIG.BUTTON_TEXT.TTS[CONFIG.TTS_AUTO];
+                    panel.querySelector('.lunalens-auto-tts-toggle').classList.toggle('active', CONFIG.TTS_AUTO);
                     
                     // 显示/隐藏翻译区域
                     if (translationArea) {
@@ -1653,8 +1655,8 @@
             panel.querySelector('.lunalens-translation-toggle').classList.toggle('active', CONFIG.TRANSLATION_ENABLED);
             
             panel.querySelector('.lunalens-auto-tts-toggle').textContent = 
-                CONFIG.BUTTON_TEXT.TTS[CONFIG.TTS_ENABLED];
-            panel.querySelector('.lunalens-auto-tts-toggle').classList.toggle('active', CONFIG.TTS_ENABLED);
+                CONFIG.BUTTON_TEXT.TTS[CONFIG.TTS_AUTO];
+            panel.querySelector('.lunalens-auto-tts-toggle').classList.toggle('active', CONFIG.TTS_AUTO);
             
             // 显示/隐藏翻译区域
             if (translationArea) {
@@ -1868,11 +1870,9 @@
     // TTS朗读功能
     function readText(text, element = null) {
         if (!text || !text.trim()) return false;
-        
-        // 停止之前的朗读
+
         stopReading();
-        
-        
+
         // 检测设备类型并使用适当的播放方法
         if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
             // 在移动设备上直接使用Audio元素和原始URL
@@ -1885,9 +1885,34 @@
         return true;
     }
     
+    // 停止朗读
+    function stopReading() {
+        if (!currentAudio) return;
+
+        try {
+            currentAudio.pause();
+            if (currentAudio.src) {
+                URL.revokeObjectURL(currentAudio.src);
+            }
+            
+            // 释放资源
+            if (currentAudio.source && currentAudio.context) {
+                try {
+                    currentAudio.source.stop();
+                    currentAudio.context.close();
+                } catch(e) {}
+            }
+        } catch(e) {
+            console.error('停止播放时出错:', e);
+        } finally {
+            currentAudio = null;
+        }
+    }
+    
     
     // 直接通过URL播放（适用于移动设备）
     function playWithDirectUrl(text) {
+
         const audio = new Audio();
         audio.src = `${CONFIG.API_URL}/api/tts?text=${encodeURIComponent(text)}`;
         
@@ -1911,9 +1936,9 @@
             currentAudio = null;
         };
         
-        audio.play().catch(e => console.error('播放启动失败:', e));
+        audio.play().catch(e => fetchAndPlayTTS(text));
     }
-    
+
     // 获取并播放TTS（适用于桌面设备）
     function fetchAndPlayTTS(text) {
         GM_xmlhttpRequest({
@@ -1923,99 +1948,54 @@
             timeout: CONFIG.TIMEOUT,
             onload: response => {
                 if (response.status >= 200 && response.status < 300) {
-                    if (response.response && response.response.byteLength > 0) {
-                        playAudioBlob(response.response);
-                    } else {
-                        console.error('TTS响应为空');
-                        playWithDirectUrl(text);
-                    }
+                    playAudioBlob(response.response);
                 } else {
                     console.error('TTS请求失败! 状态:', response.status);
-                    playWithDirectUrl(text);
                 }
             },
             onerror: error => {
                 console.error('TTS请求失败:', error);
-                playWithDirectUrl(text);
             },
             ontimeout: () => {
                 console.error('TTS请求超时');
-                playWithDirectUrl(text);
             }
         });
     }
     
-    // 停止朗读
-    function stopReading() {
-        if (!currentAudio) return;
-        
-        try {
-            currentAudio.pause();
-            
-            // 释放资源
-            if (currentAudio.source && currentAudio.context) {
-                try {
-                    currentAudio.source.stop();
-                    currentAudio.context.close();
-                } catch(e) {}
-            }
-        } catch(e) {
-            console.error('停止播放时出错:', e);
-        } finally {
-            currentAudio = null;
-        }
-    }
-    
     // 播放音频数据（仅用于桌面设备）
     function playAudioBlob(arrayBuffer) {
-        // 停止之前的朗读
-        stopReading();
-        
         try {
-            // 尝试使用AudioContext播放
-            const AudioContext = window.AudioContext || window.webkitAudioContext;
-            if (AudioContext) {
-                const audioContext = new AudioContext();
-                
-                audioContext.decodeAudioData(
-                    arrayBuffer, 
-                    (buffer) => {
-                        const source = audioContext.createBufferSource();
-                        source.buffer = buffer;
-                        source.connect(audioContext.destination);
-                        
-                        currentAudio = {
-                            source: source,
-                            context: audioContext,
-                            pause: function() {
-                                try {
-                                    this.source.stop();
-                                    this.context.close();
-                                } catch(e) {}
-                            }
-                        };
-                        
-                        source.onended = () => {
-                            audioContext.close().catch(() => {});
-                            currentAudio = null;
-                        };
-                        
-                        source.start(0);
-                    },
-                    (error) => {
-                        console.error('音频解码失败:', error);
-                        // 解码失败时尝试直接URL方式
-                        playWithDirectUrl(lastSpokenText);
-                    }
-                );
-            } else {
-                // 如果不支持AudioContext，使用直接URL方式
-                playWithDirectUrl(lastSpokenText);
-            }
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            
+            audioContext.decodeAudioData(arrayBuffer, 
+                (buffer) => {
+                    const source = audioContext.createBufferSource();
+                    source.buffer = buffer;
+                    source.connect(audioContext.destination);
+                    
+                    currentAudio = {
+                        source: source,
+                        context: audioContext,
+                        pause: function() {
+                            try {
+                                this.source.stop();
+                                this.context.close();
+                            } catch(e) {}
+                        }
+                    };
+                    
+                    source.onended = () => {
+                        audioContext.close().catch(() => {});
+                        currentAudio = null;
+                    };
+                    
+                    source.start(0);
+                },
+                () => console.error('音频播放失败')
+            );
         } catch (e) {
             console.error('音频播放失败:', e);
-            // 出错时尝试直接URL方式
-            playWithDirectUrl(lastSpokenText);
+            playWithDirectUrl(text);
         }
     }
 })();
