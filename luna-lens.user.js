@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LunaLens
 // @namespace    http://tampermonkey.net/
-// @version      0.2.4
+// @version      0.2.5
 // @description  通过HTTP API连接LunaTranslator实现浏览器上的原文的分词、翻译、朗读和查词功能 
 // @author       Raindrop213
 // @match        *://*/*
@@ -449,6 +449,7 @@
             font-size: 14px;
             max-width: 80%;
             text-align: center;
+            writing-mode: horizontal-tb;
         }
         @keyframes fadeInOut {
             0% { opacity: 0; transform: translate(-50%, -10px); }
@@ -967,16 +968,6 @@
             // 显示通知
             showToast('设置已保存', false);
         });
-        
-        // 阻止滚轮事件穿透
-        panel.addEventListener('wheel', function(e) {
-            e.stopPropagation();
-        }, { passive: false });
-        
-        // 阻止触摸滚动事件穿透
-        panel.addEventListener('touchmove', function(e) {
-            e.stopPropagation();
-        }, { passive: false });
 
         // 关闭词典面板
         closeButton.addEventListener('click', function() {
@@ -1066,6 +1057,14 @@
             showToast('设置已重置为默认值', false);
         });
 
+        // 阻止滚动事件冒泡到主页
+        panel.addEventListener('wheel', function(e) {
+            e.stopPropagation();
+        });
+        panel.addEventListener('touchmove', function(e) {
+            e.stopPropagation();
+        });
+
         return panel;
     }
 
@@ -1077,6 +1076,7 @@
             dictionaryPanel.querySelector('.lunalens-setting-window').classList.remove('visible');
             dictionaryPanel.querySelector('.lunalens-setting-toggle').classList.remove('active');
         }
+        document.documentElement.style.overflow = 'hidden';
     }
 
     // 隐藏词典面板
@@ -1084,6 +1084,7 @@
         if (dictionaryPanel) {
             dictionaryPanel.classList.remove('visible');
         }
+        document.documentElement.style.overflow = 'auto';
     }
 
     // 更新词典面板上下文（句子或段落）
