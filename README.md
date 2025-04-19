@@ -28,5 +28,5 @@ https://github.com/user-attachments/assets/b362eb4a-abd0-4656-bf73-b5e7f14f41d9
 4. ※重点：设置服务端
    - 填写你的服务器地址API_URL。（局域网ip的话需要设备与服务器出在同一个网段下，既换成对应的wifi）
 
-## 🛠 旧版本视频演示 backup/luna-lens-018.js 
-https://github.com/user-attachments/assets/067eb4b1-cad0-42ad-b00f-bebb942579ab
+5. 推荐阅读器
+   - [ッツ阅读器](https://reader.ttsu.app/manage)
