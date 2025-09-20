@@ -18,7 +18,7 @@ https://github.com/user-attachments/assets/b362eb4a-abd0-4656-bf73-b5e7f14f41d9
    - [Tampermonkey](https://www.tampermonkey.net/)
 
 2. 安装LunaLens脚本
-   - 方法1：[Greasyfork](https://greasyfork.org/zh-CN/scripts/550167-lunalens)
+   - 方法1：[Greasyfork](https://greasyfork.org/zh-CN/scripts/550168-lunalens)
    - 方法2：访问油猴插件管理面板->添加新脚本->[粘贴本仓库中的代码](https://raw.githubusercontent.com/raindrop213/LunaLens/main/luna-lens.user.js)
 
 3. 配置LunaTranslator
