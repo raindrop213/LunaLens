@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LunaLens
 // @namespace    http://tampermonkey.net/
-// @version      0.2.5
+// @version      0.2.6
 // @description  通过HTTP API连接LunaTranslator实现浏览器上的原文的分词、翻译、朗读和查词功能 
 // @author       Raindrop213
 // @match        *://*/*
@@ -52,14 +52,14 @@
         // 是否打开设置栏
         SETTING_DISPLAY: false,
         BUTTON_TEXT: {
-            TTS: {true: 'TTS:自动', false: 'TTS'},
-            TRANSLATION: {true: '翻译:开', false: '翻译:关'},
+            TTS: {true: 'TTS:auto', false: 'TTS'},
+            TRANSLATION: {true: '翻译:auto', false: '翻译'},
             DISPLAY: {true: '句子', false: '段落'}
         },
 
         // 其他设置
         // API请求等待的最大时限
-        TIMEOUT: 10000
+        TIMEOUT: 5000
     };
     
     // 当前配置，初始化为默认配置的副本
@@ -130,6 +130,11 @@
             padding: 8px 10px;
             margin: 0;
             line-height: 20px;
+            cursor: pointer;
+            transition: color 0.2s ease;
+        }
+        .lunalens-title:hover {
+            color: #007acc;
         }
         .lunalens-header-buttons {
             display: flex;
@@ -178,12 +183,21 @@
             max-height: 20vh;
             overflow: hidden;
         }
+        .lunalens-context-buttons {
+            position: absolute;
+            bottom: 4px;
+            right: 4px;
+            display: flex;
+            gap: 4px;
+            z-index: 10;
+        }
         .lunalens-dict-context {
-            padding: 8px 10px;
+            padding: 8px 10px 30px 10px;
             font-size: 15px;
             line-height: 1.5;
             overflow-y: auto;
             height: 100%;
+            box-sizing: border-box;
         }
         .lunalens-dict-query-box {
             display: flex;
@@ -211,21 +225,45 @@
         .lunalens-tts-button {
             background: #a51dd1;
         }
-        .lunalens-context-tts-button {
-            position: absolute;
-            bottom: 0px;
-            right: 0px;
-            width: 36px;
-            height: 36px;
-            color: #666;
-            background: none;
-            border: none;
+        .lunalens-context-copy-button {
+            width: 32px;
+            height: 32px;
+            color: #4a90e2;
+            background: rgba(74, 144, 226, 0.1);
+            border: 1px solid rgba(74, 144, 226, 0.3);
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 20px;
-            z-index: 10;
+            font-size: 16px;
+            transition: all 0.2s ease;
+        }
+        .lunalens-context-translate-button {
+            width: 32px;
+            height: 32px;
+            color: #50c878;
+            background: rgba(80, 200, 120, 0.1);
+            border: 1px solid rgba(80, 200, 120, 0.3);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: bold;
+            transition: all 0.2s ease;
+        }
+        .lunalens-context-tts-button {
+            width: 32px;
+            height: 32px;
+            color: #a51dd1;
+            background:rgba(165, 29, 209, 0.1);
+            border: 1px solid rgba(165, 29, 209, 0.3);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            transition: all 0.2s ease;
         }
         .lunalens-dict-content {
             flex: 1;
@@ -442,7 +480,7 @@
             color: white;
             padding: 10px 15px;
             border-radius: 4px;
-            z-index: 10000;
+            z-index: 10001;
             display: none;
             animation: fadeInOut 2s ease-in-out;
             box-shadow: 0 2px 8px rgba(0,0,0,0.2);
@@ -469,6 +507,7 @@
     let translationArea = null; // 翻译区域
     let lastTranslatedText = ''; // 上次翻译的文本，用于避免重复翻译
     let currentAudio = null; // 当前播放的音频对象
+    let pendingTTSRequests = []; // 待处理的TTS请求数组
 
     // 添加样式到文档
     function addStyle(doc) {
@@ -790,7 +829,11 @@
             <div class="lunalens-dict-window">
                 <div class="lunalens-dict-context-wrapper">
                     <div class="lunalens-dict-context"></div>
-                    <button class="lunalens-context-tts-button" title="朗读上下文">♬</button>
+                    <div class="lunalens-context-buttons">
+                        <button class="lunalens-context-copy-button" title="复制内容">⧉</button>
+                        <button class="lunalens-context-translate-button" title="翻译内容">翻</button>
+                        <button class="lunalens-context-tts-button" title="朗读上下文">♬</button>
+                    </div>
                 </div>
                 <div class="lunalens-translation"></div>
                 <div class="lunalens-dict-query-box">
@@ -879,6 +922,7 @@
         translationArea = panel.querySelector('.lunalens-translation');
 
         // 添加事件处理
+        const titleElement = panel.querySelector('.lunalens-title');
         const closeButton = panel.querySelector('.lunalens-close');
         const contextToggle = panel.querySelector('.lunalens-context-toggle');
         const translationToggle = panel.querySelector('.lunalens-translation-toggle');
@@ -889,6 +933,8 @@
         const contextArea = panel.querySelector('.lunalens-dict-context');
         const ttsButton = panel.querySelector('.lunalens-tts-button');
         const contextTtsButton = panel.querySelector('.lunalens-context-tts-button');
+        const contextCopyButton = panel.querySelector('.lunalens-context-copy-button');
+        const contextTranslateButton = panel.querySelector('.lunalens-context-translate-button');
         const settingTabs = panel.querySelectorAll('.lunalens-setting-tab');
         const saveButton = panel.querySelector('.lunalens-save-settings');
         const dictWindow = panel.querySelector('.lunalens-dict-window');
@@ -947,7 +993,7 @@
             const includeClassIds = panel.querySelector('#include-class-ids').value;
             const excludeClassIds = panel.querySelector('#exclude-class-ids').value;
             const stopContainers = panel.querySelector('#stop-containers').value;
-            const timeout = parseInt(panel.querySelector('#timeout').value) || 10000;
+            const timeout = parseInt(panel.querySelector('#timeout').value) || 5000;
             
             // 更新配置
             CONFIG.API_URL = apiUrl;
@@ -969,8 +1015,17 @@
             showToast('设置已保存', false);
         });
 
+        // 标题点击关闭面板
+        titleElement.addEventListener('click', function() {
+            // 停止当前播放的语音
+            stopReading();
+            hidePanel();
+        });
+
         // 关闭词典面板
         closeButton.addEventListener('click', function() {
+            // 停止当前播放的语音
+            stopReading();
             hidePanel();
         });
 
@@ -1030,6 +1085,23 @@
             const contextText = getContextText();
             if (contextText) {
                 readText(contextText);
+            }
+        });
+        
+        // 上下文复制按钮
+        contextCopyButton.addEventListener('click', function() {
+            const contextText = getContextText();
+            copyToClipboard(contextText);
+        });
+        
+        // 上下文翻译按钮
+        contextTranslateButton.addEventListener('click', function() {
+            const contextText = getContextText();
+            if (contextText) {
+                // 临时显示翻译区域
+                translationArea.style.display = 'block';
+                // 手动触发翻译（即使总开关关闭也能工作）
+                translateContextText(contextText, true);
             }
         });
 
@@ -1155,8 +1227,8 @@
     }
 
     // 翻译上下文内容
-    function translateContextText(text) {
-        if (!translationArea || !CONFIG.TRANSLATION_ENABLED) return;
+    function translateContextText(text, forceTranslate = false) {
+        if (!translationArea || (!CONFIG.TRANSLATION_ENABLED && !forceTranslate)) return;
         
         // 如果未提供文本参数，则获取当前上下文文本
         if (!text) {
@@ -1888,25 +1960,38 @@
     
     // 停止朗读
     function stopReading() {
-        if (!currentAudio) return;
-
-        try {
-            currentAudio.pause();
-            if (currentAudio.src) {
-                URL.revokeObjectURL(currentAudio.src);
-            }
-            
-            // 释放资源
-            if (currentAudio.source && currentAudio.context) {
+        // 取消所有待处理的TTS请求
+        pendingTTSRequests.forEach(request => {
+            if (request && request.abort) {
                 try {
-                    currentAudio.source.stop();
-                    currentAudio.context.close();
-                } catch(e) {}
+                    request.abort();
+                } catch(e) {
+                    console.log('取消TTS请求失败:', e);
+                }
             }
-        } catch(e) {
-            console.error('停止播放时出错:', e);
-        } finally {
-            currentAudio = null;
+        });
+        pendingTTSRequests = [];
+        
+        // 停止当前播放的音频
+        if (currentAudio) {
+            try {
+                currentAudio.pause();
+                if (currentAudio.src) {
+                    URL.revokeObjectURL(currentAudio.src);
+                }
+                
+                // 释放资源
+                if (currentAudio.source && currentAudio.context) {
+                    try {
+                        currentAudio.source.stop();
+                        currentAudio.context.close();
+                    } catch(e) {}
+                }
+            } catch(e) {
+                console.error('停止播放时出错:', e);
+            } finally {
+                currentAudio = null;
+            }
         }
     }
     
@@ -1942,12 +2027,18 @@
 
     // 获取并播放TTS（适用于桌面设备）
     function fetchAndPlayTTS(text) {
-        GM_xmlhttpRequest({
+        const request = GM_xmlhttpRequest({
             method: 'GET',
             url: `${CONFIG.API_URL}/api/tts?text=${encodeURIComponent(text)}`,
             responseType: 'arraybuffer',
             timeout: CONFIG.TIMEOUT,
             onload: response => {
+                // 从待处理列表中移除该请求
+                const index = pendingTTSRequests.indexOf(request);
+                if (index > -1) {
+                    pendingTTSRequests.splice(index, 1);
+                }
+                
                 if (response.status >= 200 && response.status < 300) {
                     playAudioBlob(response.response);
                 } else {
@@ -1955,16 +2046,34 @@
                 }
             },
             onerror: error => {
+                // 从待处理列表中移除该请求
+                const index = pendingTTSRequests.indexOf(request);
+                if (index > -1) {
+                    pendingTTSRequests.splice(index, 1);
+                }
                 console.error('TTS请求失败:', error);
             },
             ontimeout: () => {
+                // 从待处理列表中移除该请求
+                const index = pendingTTSRequests.indexOf(request);
+                if (index > -1) {
+                    pendingTTSRequests.splice(index, 1);
+                }
                 console.error('TTS请求超时');
             }
         });
+        
+        // 将请求添加到待处理列表
+        pendingTTSRequests.push(request);
     }
     
     // 播放音频数据（仅用于桌面设备）
     function playAudioBlob(arrayBuffer) {
+        // 如果已经有音频在播放或者系统已停止，则不播放新音频
+        if (currentAudio) {
+            return;
+        }
+        
         try {
             const audioContext = new (window.AudioContext || window.webkitAudioContext)();
             
